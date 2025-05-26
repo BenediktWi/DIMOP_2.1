@@ -17,6 +17,6 @@ driver = get_driver(
 
 
 @asynccontextmanager
-def get_session(*, write: bool = False) -> AsyncGenerator:
+async def get_session(*, write: bool = False) -> AsyncGenerator:
     async with driver.session(default_access_mode="WRITE" if write else "READ") as session:
         yield session
