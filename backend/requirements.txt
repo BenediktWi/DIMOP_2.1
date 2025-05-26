@@ -1,0 +1,5 @@
+fastapi==0.111
+uvicorn[standard]==0.29
+neo4j==5.16
+pydantic==2.7
+pytest==8.2
