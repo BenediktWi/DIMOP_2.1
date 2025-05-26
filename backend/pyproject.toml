@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "circular-design-backend"
+version = "0.1.0"
+description = "Backend for Circular Design Toolkit"
+authors = ["OpenAI Assistant <>"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "0.111"
+uvicorn = {extras = ["standard"], version = "^0.29"}
+neo4j = "^5.16"
+pydantic = "^2.7"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2"
+
+[build-system]
+requires = ["poetry-core>=1.5.0"]
+build-backend = "poetry.core.masonry.api"
