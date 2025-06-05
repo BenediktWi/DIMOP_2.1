@@ -16,6 +16,8 @@ async def create_project(project: ProjectCreate, session: AsyncSession = Depends
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
     record = await result.single()
+    if not record:
+        raise HTTPException(status_code=404, detail="Resource not found")
     await broadcast(record["id"], {"op": "create_project", "id": record["id"]})
     return Project(id=record["id"], name=record["name"])
 

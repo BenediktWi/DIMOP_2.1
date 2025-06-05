@@ -16,6 +16,8 @@ async def create_material(material: MaterialCreate, session: AsyncSession = Depe
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
     record = await result.single()
+    if not record:
+        raise HTTPException(status_code=404, detail="Resource not found")
     await broadcast(0, {"op": "create_material", "id": record["id"]})
     return Material(id=record["id"], name=record["name"], weight=record["weight"])
 
