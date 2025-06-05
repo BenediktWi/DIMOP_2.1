@@ -9,8 +9,12 @@ export default function App() {
 
   useEffect(() => {
     fetch('/projects/1/graph')
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) throw new Error(r.statusText)
+        return r.json()
+      })
       .then(setState)
+      .catch(err => console.error('Failed to load project', err))
   }, [])
 
   useEffect(() => {
