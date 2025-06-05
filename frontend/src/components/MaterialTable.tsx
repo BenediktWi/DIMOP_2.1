@@ -1,5 +1,10 @@
 import React from 'react'
-import { useReactTable, createColumnHelper, flexRender } from '@tanstack/react-table'
+import {
+  useReactTable,
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+} from '@tanstack/react-table'
 
 interface Material {
   id: number
@@ -26,7 +31,11 @@ export default function MaterialTable({ materials, onDelete }: Props) {
     }),
   ]
 
-  const table = useReactTable({ data: materials, columns })
+  const table = useReactTable({
+    data: materials,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  })
 
   return (
     <table className="min-w-full text-sm">

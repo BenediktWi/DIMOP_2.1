@@ -11,13 +11,11 @@ export default function App() {
   useEffect(() => {
     fetch('/projects/1/graph')
       .then(r => {
-        if (!r.ok) {
-          throw new Error(`HTTP ${r.status}`)
-        }
+        if (!r.ok) throw new Error(r.statusText)
         return r.json()
       })
       .then(setState)
-      .catch(() => setError('Failed to load project data'))
+      .catch(err => console.error('Failed to load project', err))
   }, [])
 
   useEffect(() => {
