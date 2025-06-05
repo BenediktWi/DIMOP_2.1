@@ -20,7 +20,7 @@ cd backend
 python -m venv venv
 source venv/bin/activate  # on Windows use "venv\\Scripts\\activate"
 pip install -r requirements.txt
-uvicorn -m app.main:app --reload
+python -m uvicorn app.main:app --reload
 ```
 
 ### 2. Start the frontend
