@@ -1,8 +1,7 @@
 from typing import AsyncGenerator
-from contextlib import asynccontextmanager
 import os
 
-from neo4j import AsyncGraphDatabase
+from neo4j import AsyncGraphDatabase, AsyncSession
 
 
 def get_driver(uri: str, user: str | None = None, password: str | None = None):
@@ -16,7 +15,8 @@ driver = get_driver(
 )
 
 
-@asynccontextmanager
-async def get_session(*, write: bool = False) -> AsyncGenerator:
-    async with driver.session(default_access_mode="WRITE" if write else "READ") as session:
+async def get_session(*, write: bool = False) -> AsyncGenerator[AsyncSession, None]:
+    async with driver.session(
+        default_access_mode="WRITE" if write else "READ"
+    ) as session:
         yield session
