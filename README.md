@@ -34,6 +34,8 @@ npm run dev
 ```
 
 With both processes running the application is reachable at [http://localhost:5173](http://localhost:5173) and talks to the API on port 8000.
+If the initial API request fails (for example due to a 404 or connection issue),
+the frontend shows an error message instead of the editor.
 
 ### Configuration
 
