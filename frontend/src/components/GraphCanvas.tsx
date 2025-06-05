@@ -1,5 +1,7 @@
 import React from 'react'
 import ReactFlow, { MiniMap, Controls, Background, addEdge } from 'react-flow-renderer'
+import 'react-flow-renderer/dist/style.css'
+import 'react-flow-renderer/dist/theme-default.css'
 
 interface Props {
   nodes: any[]
