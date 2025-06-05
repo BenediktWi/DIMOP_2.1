@@ -37,6 +37,16 @@ With both processes running the application is reachable at [http://localhost:51
 If the initial API request fails (for example due to a 404 or connection issue),
 the frontend shows an error message instead of the editor.
 
+### Create your first project
+
+The frontend currently expects that a project with ID `1` exists. You can create
+it via the API using `curl`:
+
+```bash
+curl -X POST http://localhost:8000/projects -H 'Content-Type: application/json' \
+  -d '{"name": "My Project"}'
+```
+
 ### Configuration
 
 If your Neo4j database is not running locally use the environment variables `NEO4J_URI`, `NEO4J_USER` and `NEO4J_PASSWORD` to override the defaults.
