@@ -6,11 +6,18 @@ import useUndoRedo from './components/useUndoRedo'
 export default function App() {
   const [data, setData] = useState({ nodes: [], edges: [], materials: [] })
   const { state, setState, undo, redo } = useUndoRedo(data, 50)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/projects/1/graph')
-      .then(r => r.json())
+      .then(r => {
+        if (!r.ok) {
+          throw new Error(`HTTP ${r.status}`)
+        }
+        return r.json()
+      })
       .then(setState)
+      .catch(() => setError('Failed to load project data'))
   }, [])
 
   useEffect(() => {
@@ -21,6 +28,10 @@ export default function App() {
     }
     return () => ws.close()
   }, [setState])
+
+  if (error) {
+    return <div className="p-4 text-red-600">{error}</div>
+  }
 
   return (
     <div className="flex h-full">
