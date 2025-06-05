@@ -10,6 +10,30 @@ router = APIRouter(prefix="/relations", tags=["relations"])
 
 @router.post("/", response_model=Relation)
 async def create_relation(rel: RelationCreate, session: AsyncSession = Depends(get_session)):
+    # verify source node exists
+    try:
+        res_src = await session.run(
+            "MATCH (s:Node) WHERE id(s)=$sid RETURN id(s) AS id",
+            sid=rel.source_id,
+        )
+    except exceptions.ServiceUnavailable:
+        raise HTTPException(status_code=503, detail="Neo4j unavailable")
+    src_record = await res_src.single()
+    if not src_record:
+        raise HTTPException(status_code=404, detail="Source node not found")
+
+    # verify target node exists
+    try:
+        res_tgt = await session.run(
+            "MATCH (t:Node) WHERE id(t)=$tid RETURN id(t) AS id",
+            tid=rel.target_id,
+        )
+    except exceptions.ServiceUnavailable:
+        raise HTTPException(status_code=503, detail="Neo4j unavailable")
+    tgt_record = await res_tgt.single()
+    if not tgt_record:
+        raise HTTPException(status_code=404, detail="Target node not found")
+
     query = (
         """MATCH (s:Node) WHERE id(s)=$sid MATCH (t:Node) WHERE id(t)=$tid """
         "CREATE (s)-[r:LINK]->(t) RETURN id(r) AS id"
@@ -19,7 +43,12 @@ async def create_relation(rel: RelationCreate, session: AsyncSession = Depends(g
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
     record = await result.single()
-    await broadcast(rel.project_id, {"op": "create_relation", "id": record["id"], "source": rel.source_id, "target": rel.target_id})
+    if not record:
+        raise HTTPException(status_code=404, detail="Resource not found")
+    await broadcast(
+        rel.project_id,
+        {"op": "create_relation", "id": record["id"], "source": rel.source_id, "target": rel.target_id},
+    )
     return Relation(id=record["id"], **rel.model_dump())
 
 

@@ -19,6 +19,8 @@ async def create_node(node: NodeCreate, session: AsyncSession = Depends(get_sess
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
     record = await result.single()
+    if not record:
+        raise HTTPException(status_code=404, detail="Resource not found")
     await broadcast(node.project_id, {"op": "create_node", "id": record["id"]})
     return Node(id=record["id"], project_id=node.project_id, material_id=node.material_id, level=node.level)
 
