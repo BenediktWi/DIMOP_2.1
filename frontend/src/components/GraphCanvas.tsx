@@ -12,7 +12,7 @@ interface Props {
 export default function GraphCanvas({ nodes, edges, onChange }: Props) {
   const onConnect = (params: any) => onChange({ nodes, edges: addEdge(params, edges) })
   return (
-    <ReactFlow nodes={nodes} edges={edges} onConnect={onConnect} fitView className="h-5/6">
+    <ReactFlow nodes={nodes} edges={edges} onConnect={onConnect} fitView className="h-full">
       <MiniMap />
       <Controls />
       <Background />
