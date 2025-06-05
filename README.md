@@ -44,9 +44,13 @@ The frontend currently expects that a project with ID `1` exists. You can create
 it via the API using `curl`:
 
 ```bash
-curl -X POST http://localhost:8000/projects -H 'Content-Type: application/json' \
+curl -X POST http://localhost:8000/projects/ \
+  -H 'Content-Type: application/json' \
   -d '{"name": "My Project"}'
 ```
+
+Note the trailing slash in `/projects/`. Omitting it triggers a redirect that
+causes a `405 Method Not Allowed` error.
 
 ### Configuration
 
