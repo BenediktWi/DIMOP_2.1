@@ -70,3 +70,7 @@ The built files can then be served by any static file server or integrated into 
 
 - `backend/` – FastAPI application
 - `frontend/` – React client using Vite and Tailwind CSS
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
