@@ -48,6 +48,20 @@ npm run build
 ```
 
 The built files can then be served by any static file server or integrated into the backend.
+## Create your first project
+
+The frontend expects a project with ID `1` to exist. If your Neo4j database is empty, create one via the API:
+
+```bash
+curl -X POST http://localhost:8000/projects 
+  -H 'Content-Type: application/json' 
+  -d '{"name": "My Project"}'
+```
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+
 
 ## Repository layout
 
