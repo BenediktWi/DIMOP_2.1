@@ -1,6 +1,8 @@
 # Frontend Setup
 
 This React app uses Vite and Tailwind CSS.
+It renders flows using **ReactFlow v11**.
+Remember to import `reactflow/dist/style.css` in components that use ReactFlow.
 
 ```bash
 cd frontend

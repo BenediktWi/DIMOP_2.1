@@ -1,6 +1,7 @@
 # Circular Design Toolkit
 
 This repository contains a minimal FastAPI backend and a React\+Vite frontend used to model material flows.
+The frontend relies on **ReactFlow v11** for the graph editor. Components using ReactFlow must import `reactflow/dist/style.css` to include its default styles.
 
 ## Requirements
 
