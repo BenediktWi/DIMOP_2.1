@@ -12,8 +12,13 @@ This repository contains a minimal FastAPI backend and a React\+Vite frontend us
 
 ### 1. Start the backend
 
+Create and activate a Python virtual environment before installing the
+dependencies:
+
 ```bash
 cd backend
+python -m venv venv
+source venv/bin/activate  # on Windows use "venv\\Scripts\\activate"
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
