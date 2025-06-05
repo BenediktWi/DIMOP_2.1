@@ -6,6 +6,7 @@ import useUndoRedo from './components/useUndoRedo'
 export default function App() {
   const [data, setData] = useState({ nodes: [], edges: [], materials: [] })
   const { state, setState, undo, redo } = useUndoRedo(data, 50)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/projects/1/graph')
@@ -25,6 +26,10 @@ export default function App() {
     }
     return () => ws.close()
   }, [setState])
+
+  if (error) {
+    return <div className="p-4 text-red-600">{error}</div>
+  }
 
   return (
     <div className="flex h-full">

@@ -20,7 +20,7 @@ cd backend
 python -m venv venv
 source venv/bin/activate  # on Windows use "venv\\Scripts\\activate"
 pip install -r requirements.txt
-uvicorn app.main:app --reload
+uvicorn -m app.main:app --reload
 ```
 
 ### 2. Start the frontend
@@ -34,6 +34,18 @@ npm run dev
 ```
 
 With both processes running the application is reachable at [http://localhost:5173](http://localhost:5173) and talks to the API on port 8000.
+If the initial API request fails (for example due to a 404 or connection issue),
+the frontend shows an error message instead of the editor.
+
+### Create your first project
+
+The frontend currently expects that a project with ID `1` exists. You can create
+it via the API using `curl`:
+
+```bash
+curl -X POST http://localhost:8000/projects -H 'Content-Type: application/json' \
+  -d '{"name": "My Project"}'
+```
 
 ### Configuration
 
