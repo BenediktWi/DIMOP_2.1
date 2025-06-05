@@ -7,7 +7,10 @@ The frontend relies on **ReactFlow v11** for the graph editor. Components using 
 
 - Python 3.11 or newer
 - Node.js 18 or newer
-- A running Neo4j instance (defaults to `bolt://localhost:7687` with user `neo4j`/`neo4j`)
+- A running Neo4j instance (defaults to `bolt://localhost:7687` with user `neo4j`/`neo4j`).
+  API requests will fail unless Neo4j runs with these credentials or the
+  environment variables `NEO4J_URI`, `NEO4J_USER` and `NEO4J_PASSWORD` are set
+  accordingly.
 
 ## Quick start
 
@@ -54,7 +57,9 @@ causes a `405 Method Not Allowed` error.
 
 ### Configuration
 
-If your Neo4j database is not running locally use the environment variables `NEO4J_URI`, `NEO4J_USER` and `NEO4J_PASSWORD` to override the defaults.
+If your Neo4j database is not running locally use the environment variables
+`NEO4J_URI`, `NEO4J_USER` and `NEO4J_PASSWORD` to override the defaults;
+otherwise all API requests will fail.
 
 ### Building for production
 
