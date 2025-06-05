@@ -1,6 +1,5 @@
 from typing import AsyncGenerator
 import os
-import asyncio
 
 from neo4j import AsyncGraphDatabase, AsyncSession, exceptions
 
@@ -15,10 +14,12 @@ driver = get_driver(
     password=os.getenv("NEO4J_PASSWORD", "neo4j"),
 )
 
-try:
-    asyncio.run(driver.verify_connectivity())
-except exceptions.ServiceUnavailable as exc:
-    raise RuntimeError("Unable to connect to Neo4j") from exc
+async def verify_connectivity() -> None:
+    """Ensure the Neo4j database is reachable."""
+    try:
+        await driver.verify_connectivity()
+    except exceptions.ServiceUnavailable as exc:
+        raise RuntimeError("Unable to connect to Neo4j") from exc
 
 
 async def get_session(*, write: bool = False) -> AsyncGenerator[AsyncSession, None]:
