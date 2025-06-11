@@ -49,7 +49,7 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full w-full">
       <div className="w-2/3 h-full">
         <GraphCanvas nodes={state.nodes} edges={state.edges} onChange={setState} />
         <div className="p-2 space-x-2">
