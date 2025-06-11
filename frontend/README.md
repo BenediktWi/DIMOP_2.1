@@ -12,6 +12,8 @@ npm run dev
 
 The development server proxies API requests starting with `/projects`, `/materials`,
 `/nodes`, `/relations`, `/score` and `/ws` to `http://localhost:8000`. Make sure
-the backend is running on that port before starting the frontend. On start it
-connects to the backend at the same host and loads project 1. When this request
-fails, the app displays an error message to help with troubleshooting.
+the backend is running on that port before starting the frontend. By default the
+client loads project `1`. You can open a different project by adding
+`?project=<id>` to the URL or by setting the `projectId` value in your browser's
+local storage. If the initial request fails, the app displays an error message to
+help with troubleshooting.
