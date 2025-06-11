@@ -41,7 +41,11 @@ export default function App() {
         console.error('Invalid WS message', ev.data)
       }
     }
-    return () => ws.close()
+    return () => {
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        ws.close()
+      }
+    }
   }, [setState, projectId])
 
   if (error) {
