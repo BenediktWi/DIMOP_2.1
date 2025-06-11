@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
@@ -6,13 +7,15 @@ from .database import verify_connectivity
 
 from .routers import projects, materials, nodes, relations, score, websocket
 
-app = FastAPI(title="Circular Design Toolkit")
 
-
-@app.on_event("startup")
-async def startup() -> None:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     if not os.getenv("TESTING"):
         await verify_connectivity()
+    yield
+
+
+app = FastAPI(title="Circular Design Toolkit", lifespan=lifespan)
 
 app.include_router(projects.router)
 app.include_router(materials.router)
