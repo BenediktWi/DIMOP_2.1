@@ -21,7 +21,7 @@ cd backend
 python -m venv venv
 source venv/bin/activate  # on Windows use "venv\\Scripts\\activate"
 pip install -r requirements.txt
-NEO4J_PASSWORD=your_password uvicorn app.main:app --reload
+NEO4J_PASSWORD=your_password python -m uvicorn app.main:app --reload
 ```
 
 ### 2. Start the frontend
