@@ -34,7 +34,7 @@ export default function App() {
         }
         return r.json()
       })
-      .then((data) =>
+      .then((data) => {
         setState({
           ...data,
           nodes: data.nodes.map((n: any) => ({
@@ -42,7 +42,10 @@ export default function App() {
             position: { x: Math.random() * 250, y: Math.random() * 250 },
           })),
         })
-      )
+        if (!data.materials.length) {
+          addMaterial()
+        }
+      })
       .catch(() => setError('Failed to load project data'))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
@@ -91,6 +94,27 @@ export default function App() {
 
   if (error) {
     return <div className="p-4 text-red-600">{error}</div>
+  }
+
+  const addMaterial = () => {
+    const name = window.prompt('Name of material', '')
+    if (!name) return
+    const weight = parseFloat(window.prompt('Weight of material', '1') || '1')
+    fetch('/materials/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, weight }),
+    })
+      .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(material =>
+        setState(prev =>
+          applyWsMessage(prev, {
+            op: 'create_material',
+            material,
+          })
+        )
+      )
+      .catch(err => console.error(err))
   }
 
   const addNode = () => {
@@ -143,6 +167,7 @@ export default function App() {
         <GraphCanvas nodes={state.nodes} edges={state.edges} onConnectEdge={handleConnect} />
         <div className="p-2 space-x-2">
           <button onClick={addNode}>Add Node</button>
+          <button onClick={addMaterial}>Add Material</button>
           <button onClick={undo}>Undo</button>
           <button onClick={redo}>Redo</button>
         </div>
