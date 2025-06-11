@@ -7,7 +7,7 @@ The frontend relies on **ReactFlow v11** for the graph editor. Components using 
 
 - Python 3.11 or newer
 - Node.js 18 or newer
-- A running Neo4j instance (defaults to `bolt://localhost:7687` with user `neo4j`/`neo4j`)
+- A running Neo4j instance (defaults to `bolt://localhost:7687` with user `neo4j`/`your_password`)
 
 ## Quick start
 
