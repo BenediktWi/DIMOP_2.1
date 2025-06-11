@@ -31,7 +31,7 @@ export default function App() {
     }
 
     const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsUrl = `${scheme}://localhost:8000/ws/projects/${projectId}`;
+    const wsUrl = `${scheme}://localhost:8000/socket/projects/${projectId}`;
     console.log(`Attempting to connect WebSocket to: ${wsUrl}`);
 
     const ws = new WebSocket(wsUrl);

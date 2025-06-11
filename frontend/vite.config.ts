@@ -13,7 +13,7 @@ export default defineConfig({
       '/nodes': { target: 'http://localhost:8000', changeOrigin: true },
       '/relations': { target: 'http://localhost:8000', changeOrigin: true },
       '/score': { target: 'http://localhost:8000', changeOrigin: true },
-      '/ws': { target: 'ws://localhost:8000', ws: true }
+      '/socket': { target: 'ws://localhost:8000', ws: true }
     }
   }
 })
