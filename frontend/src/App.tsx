@@ -48,7 +48,8 @@ export default function App() {
     if (wsRef.current) return // already connected
 
     const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const wsUrl = `${scheme}://localhost:8000/ws/projects/${projectId}`
+    const host = import.meta.env.VITE_WS_HOST ?? 'localhost:8000'
+    const wsUrl = `${scheme}://${host}/ws/projects/${projectId}`
     console.log(`Attempting to connect WebSocket to: ${wsUrl}`)
 
     const ws = new WebSocket(wsUrl)
