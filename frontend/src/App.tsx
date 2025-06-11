@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react'
 import GraphCanvas from './components/GraphCanvas'
 import MaterialTable from './components/MaterialTable'
 import useUndoRedo from './components/useUndoRedo'
+import { applyWsMessage, GraphState, WsMessage } from './wsMessage'
 
 export default function App() {
-  const [data, setData] = useState({ nodes: [], edges: [], materials: [] })
-  const { state, setState, undo, redo } = useUndoRedo(data, 50)
+  const [data, setData] = useState<GraphState>({ nodes: [], edges: [], materials: [] })
+  const { state, setState, undo, redo } = useUndoRedo<GraphState>(data, 50)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -23,8 +24,12 @@ export default function App() {
   useEffect(() => {
     const ws = new WebSocket(`ws://${window.location.host}/ws/projects/1`)
     ws.onmessage = ev => {
-      const patch = JSON.parse(ev.data)
-      setState(prev => ({ ...prev, ...patch }))
+      try {
+        const msg: WsMessage = JSON.parse(ev.data)
+        setState(prev => applyWsMessage(prev, msg))
+      } catch {
+        console.error('Invalid WS message', ev.data)
+      }
     }
     return () => ws.close()
   }, [setState])
