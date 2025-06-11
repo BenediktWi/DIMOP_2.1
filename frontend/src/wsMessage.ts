@@ -13,10 +13,20 @@ export function applyWsMessage(state: GraphState, msg: WsMessage): GraphState {
   switch (msg.op) {
     case 'create_node':
       if ('node' in msg) {
-        return { ...state, nodes: [...state.nodes, msg.node] }
+        const n = msg.node
+        if (!('position' in n)) {
+          n.position = { x: Math.random() * 250, y: Math.random() * 250 }
+        }
+        return { ...state, nodes: [...state.nodes, n] }
       }
       if ('id' in msg) {
-        return { ...state, nodes: [...state.nodes, { id: msg.id }] }
+        return {
+          ...state,
+          nodes: [
+            ...state.nodes,
+            { id: msg.id, position: { x: Math.random() * 250, y: Math.random() * 250 } },
+          ],
+        }
       }
       return state
     case 'delete_node':

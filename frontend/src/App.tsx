@@ -34,7 +34,15 @@ export default function App() {
         }
         return r.json()
       })
-      .then(setState)
+      .then((data) =>
+        setState({
+          ...data,
+          nodes: data.nodes.map((n: any) => ({
+            ...n,
+            position: { x: Math.random() * 250, y: Math.random() * 250 },
+          })),
+        })
+      )
       .catch(() => setError('Failed to load project data'))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
@@ -85,11 +93,38 @@ export default function App() {
     return <div className="p-4 text-red-600">{error}</div>
   }
 
+  const addNode = () => {
+    if (!state.materials.length) return
+    fetch('/nodes/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        project_id: Number(projectId),
+        material_id: state.materials[0].id,
+        level: 0,
+      }),
+    }).catch((err) => console.error(err))
+  }
+
+  const handleConnect = (connection: any) => {
+    if (!connection.source || !connection.target) return
+    fetch('/relations/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        project_id: Number(projectId),
+        source_id: Number(connection.source),
+        target_id: Number(connection.target),
+      }),
+    }).catch((err) => console.error(err))
+  }
+
   return (
     <div className="flex h-full w-full">
       <div className="w-2/3 h-full">
-        <GraphCanvas nodes={state.nodes} edges={state.edges} onChange={setState} />
+        <GraphCanvas nodes={state.nodes} edges={state.edges} onConnectEdge={handleConnect} />
         <div className="p-2 space-x-2">
+          <button onClick={addNode}>Add Node</button>
           <button onClick={undo}>Undo</button>
           <button onClick={redo}>Redo</button>
         </div>
