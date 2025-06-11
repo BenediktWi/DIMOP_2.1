@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import GraphCanvas from './components/GraphCanvas'
 import MaterialTable from './components/MaterialTable'
 import useUndoRedo from './components/useUndoRedo'
@@ -7,6 +7,7 @@ import { applyWsMessage, GraphState, WsMessage } from './wsMessage'
 export default function App() {
   const { state, setState, undo, redo } = useUndoRedo<GraphState>({ nodes: [], edges: [], materials: [] }, 50)
   const [error, setError] = useState<string | null>(null)
+  const wsRef = useRef<WebSocket | null>(null)
 
   const [projectId] = useState(() => {
     const params = new URLSearchParams(window.location.search)
@@ -31,8 +32,12 @@ export default function App() {
   }, [projectId])
 
   useEffect(() => {
+    if (wsRef.current) return
+
     const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const ws = new WebSocket(`${scheme}://localhost:8000/ws/projects/${projectId}`)
+    wsRef.current = ws
+
     ws.onmessage = ev => {
       try {
         const msg: WsMessage = JSON.parse(ev.data)
@@ -41,12 +46,19 @@ export default function App() {
         console.error('Invalid WS message', ev.data)
       }
     }
-    return () => {
+
+    const handleClose = () => {
       if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-      // if (ws.readyState === 1) { //Test aus https://stackoverflow.com/questions/12487828/what-does-websocket-is-closed-before-the-connection-is-established-mean
-      
         ws.close()
       }
+    }
+
+    window.addEventListener('beforeunload', handleClose)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleClose)
+      handleClose()
+      wsRef.current = null
     }
   }, [setState, projectId])
 
