@@ -7,7 +7,10 @@ router = APIRouter(tags=["score"])
 
 
 @router.post("/score/{project_id}")
-async def score_project(project_id: int, session: AsyncSession = Depends(get_session)):
+async def score_project(
+    project_id: int,
+    session: AsyncSession = Depends(get_session),
+):
     query = (
         "MATCH (p:Project)<-[:PART_OF]-(n:Node)-[:USES]->(m:Material) "
         "WHERE id(p)=$pid RETURN sum(m.weight) AS total"
