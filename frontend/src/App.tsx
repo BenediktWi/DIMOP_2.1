@@ -9,8 +9,18 @@ export default function App() {
   const { state, setState, undo, redo } = useUndoRedo<GraphState>(data, 50)
   const [error, setError] = useState<string | null>(null)
 
+  const [projectId] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    const query = params.get('project')
+    if (query) {
+      localStorage.setItem('projectId', query)
+      return query
+    }
+    return localStorage.getItem('projectId') ?? '1'
+  })
+
   useEffect(() => {
-    fetch('/projects/1/graph')
+    fetch(`/projects/${projectId}/graph`)
       .then(r => {
         if (!r.ok) {
           throw new Error(`HTTP ${r.status}`)
@@ -19,10 +29,10 @@ export default function App() {
       })
       .then(setState)
       .catch(() => setError('Failed to load project data'))
-  }, [])
+  }, [projectId])
 
   useEffect(() => {
-    const ws = new WebSocket(`ws://${window.location.host}/ws/projects/1`)
+    const ws = new WebSocket(`ws://${window.location.host}/ws/projects/${projectId}`)
     ws.onmessage = ev => {
       try {
         const msg: WsMessage = JSON.parse(ev.data)
@@ -32,7 +42,7 @@ export default function App() {
       }
     }
     return () => ws.close()
-  }, [setState])
+  }, [setState, projectId])
 
   if (error) {
     return <div className="p-4 text-red-600">{error}</div>

@@ -38,10 +38,9 @@ With both processes running the application is reachable at [http://localhost:51
 If the initial API request fails (for example due to a 404 or connection issue),
 the frontend shows an error message instead of the editor.
 
-### Create your first project
+### Create a project
 
-The frontend currently expects that a project with ID `1` exists. You can create
-it via the API using `curl`:
+The frontend can load any project ID. Create a project via the API:
 
 ```bash
 curl -X POST http://localhost:8000/projects/ \
@@ -51,6 +50,12 @@ curl -X POST http://localhost:8000/projects/ \
 
 Note the trailing slash in `/projects/`. Omitting it triggers a redirect that
 causes a `405 Method Not Allowed` error.
+
+Once created, note the numeric ID from the response. Specify this ID in the
+frontend by appending `?project=<id>` to the URL or by storing it in the
+browser's local storage under the key `projectId`. Visiting for example
+`http://localhost:5173/?project=2` will persist the ID `2` and load that
+project on subsequent visits.
 
 ### Configuration
 
