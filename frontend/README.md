@@ -38,3 +38,13 @@ client loads project `1`. You can open a different project by adding
 `?project=<id>` to the URL or by setting the `projectId` value in your browser's
 local storage. If the initial request fails, the app displays an error message to
 help with troubleshooting.
+
+## Running tests
+
+Install dependencies and execute the Vitest suite:
+
+```bash
+cd frontend
+npm install
+npm test
+```
