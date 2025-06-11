@@ -55,7 +55,7 @@ async def get_graph(
     q_nodes = (
         "MATCH (p:Project)<-[:PART_OF]-(n:Node)-[:USES]->(m:Material) "
         "WHERE id(p)=$pid RETURN id(n) AS id, id(m) AS material_id, "
-        "n.level AS level"
+        "n.level AS level, n.weight AS weight, n.recyclable AS recyclable"
     )
     try:
         result = await session.run(q_nodes, pid=project_id)

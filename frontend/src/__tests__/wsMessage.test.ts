@@ -6,7 +6,8 @@ describe('applyWsMessage', () => {
     const state: GraphState = { nodes: [], edges: [], materials: [] }
     const result = applyWsMessage(state, { op: 'create_node', node: { id: 1 } })
     expect(result.nodes).toHaveLength(1)
-    expect(result.nodes[0]).toEqual({ id: 1 })
+    expect(result.nodes[0]).toHaveProperty('id', 1)
+    expect(result.nodes[0]).toHaveProperty('position')
   })
 
   it('ignores unknown op', () => {

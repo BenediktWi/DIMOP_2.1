@@ -16,7 +16,7 @@ async def create_node(
     query = (
         "MATCH (p:Project) WHERE id(p)=$pid "
         "MATCH (m:Material) WHERE id(m)=$mid "
-        "CREATE (n:Node {level: $level})-[:USES]->(m), "
+        "CREATE (n:Node {level: $level, weight: $weight, recyclable: $recyclable})-[:USES]->(m), "
         "(n)-[:PART_OF]->(p) RETURN id(n) AS id"
     )
     try:
@@ -25,19 +25,24 @@ async def create_node(
             pid=node.project_id,
             mid=node.material_id,
             level=node.level,
+            weight=node.weight,
+            recyclable=node.recyclable,
         )
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
     record = await result.single()
     if not record:
         raise HTTPException(status_code=404, detail="Resource not found")
-    await broadcast(node.project_id, {"op": "create_node", "id": record["id"]})
-    return Node(
-        id=record["id"],
-        project_id=node.project_id,
-        material_id=node.material_id,
-        level=node.level,
-    )
+    node_data = {
+        "id": record["id"],
+        "project_id": node.project_id,
+        "material_id": node.material_id,
+        "level": node.level,
+        "weight": node.weight,
+        "recyclable": node.recyclable,
+    }
+    await broadcast(node.project_id, {"op": "create_node", "node": node_data})
+    return Node(**node_data)
 
 
 @router.get("/{node_id}", response_model=Node)
@@ -49,7 +54,7 @@ async def get_node(
         "MATCH (n:Node)-[:USES]->(m:Material) WHERE id(n)=$id "
         "MATCH (n)-[:PART_OF]->(p:Project) "
         "RETURN id(n) AS id, id(p) AS project_id, id(m) AS material_id, "
-        "n.level AS level"
+        "n.level AS level, n.weight AS weight, n.recyclable AS recyclable"
     )
     try:
         result = await session.run(query, id=node_id)

@@ -95,15 +95,33 @@ export default function App() {
 
   const addNode = () => {
     if (!state.materials.length) return
+    const weight = parseFloat(window.prompt('Weight of component', '1') || '1')
+    const materialId = parseInt(
+      window.prompt('Material ID', String(state.materials[0].id)) ||
+        String(state.materials[0].id)
+    )
+    const recyclable = window.confirm('Is this component recyclable?')
     fetch('/nodes/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         project_id: Number(projectId),
-        material_id: state.materials[0].id,
+        material_id: materialId,
         level: 0,
+        weight,
+        recyclable,
       }),
-    }).catch((err) => console.error(err))
+    })
+      .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(node =>
+        setState(prev =>
+          applyWsMessage(prev, {
+            op: 'create_node',
+            node,
+          })
+        )
+      )
+      .catch(err => console.error(err))
   }
 
   const handleConnect = (connection: any) => {

@@ -23,6 +23,8 @@ class NodeBase(BaseModel):
     project_id: int
     material_id: int
     level: int
+    weight: float
+    recyclable: bool
 
 
 class NodeCreate(NodeBase):

@@ -13,9 +13,12 @@ export function applyWsMessage(state: GraphState, msg: WsMessage): GraphState {
   switch (msg.op) {
     case 'create_node':
       if ('node' in msg) {
-        const n = msg.node
-        if (!('position' in n)) {
-          n.position = { x: Math.random() * 250, y: Math.random() * 250 }
+        const n = {
+          ...msg.node,
+          position: msg.node.position ?? {
+            x: Math.random() * 250,
+            y: Math.random() * 250,
+          },
         }
         return { ...state, nodes: [...state.nodes, n] }
       }
