@@ -17,7 +17,7 @@ export default function GraphCanvas({ nodes, edges, onChange }: Props) {
       edges={edges}
       onConnect={onConnect}
       fitView
-      className="w-full h-full"
+      style={{ width: '100%', height: '100%' }}
     >
       <MiniMap />
       <Controls />
