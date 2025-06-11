@@ -12,7 +12,7 @@ router = APIRouter(prefix="/nodes", tags=["nodes"])
 async def create_node(node: NodeCreate, session: AsyncSession = Depends(get_session)):
     query = (
         """MATCH (p:Project) WHERE id(p)=$pid MATCH (m:Material) WHERE id(m)=$mid """
-        "CREATE (n:Node {level: $level})-[:USES]->(m)-[:PART_OF]->(p) RETURN id(n) AS id"
+        "CREATE (n:Node {level: $level})-[:USES]->(m), (n)-[:PART_OF]->(p) RETURN id(n) AS id"
     )
     try:
         result = await session.run(query, pid=node.project_id, mid=node.material_id, level=node.level)
