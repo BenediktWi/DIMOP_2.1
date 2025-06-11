@@ -32,7 +32,7 @@ export default function App() {
 
   useEffect(() => {
     const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const ws = new WebSocket(`${scheme}://localhost:8000/ws/projects/${projectId}`)
+    const ws = new WebSocket(`${scheme}://${window.location.host}/ws/projects/${projectId}`)
     ws.onmessage = ev => {
       try {
         const msg: WsMessage = JSON.parse(ev.data)
