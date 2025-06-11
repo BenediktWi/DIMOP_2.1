@@ -103,7 +103,17 @@ export default function App() {
         material_id: state.materials[0].id,
         level: 0,
       }),
-    }).catch((err) => console.error(err))
+    })
+      .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(node =>
+        setState(prev =>
+          applyWsMessage(prev, {
+            op: 'create_node',
+            node,
+          })
+        )
+      )
+      .catch(err => console.error(err))
   }
 
   const handleConnect = (connection: any) => {
