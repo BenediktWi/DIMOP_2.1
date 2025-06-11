@@ -2,14 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from neo4j import AsyncSession, exceptions
 
 from .websocket import broadcast
-from ..database import get_session
+from ..database import get_session, get_write_session
 from ..models.schemas import Relation, RelationCreate
 
 router = APIRouter(prefix="/relations", tags=["relations"])
 
 
 @router.post("/", response_model=Relation)
-async def create_relation(rel: RelationCreate, session: AsyncSession = Depends(get_session)):
+async def create_relation(
+    rel: RelationCreate,
+    session: AsyncSession = Depends(get_write_session),
+):
     # verify source node exists
     try:
         res_src = await session.run(
@@ -53,7 +56,10 @@ async def create_relation(rel: RelationCreate, session: AsyncSession = Depends(g
 
 
 @router.delete("/{relation_id}")
-async def delete_relation(relation_id: int, session: AsyncSession = Depends(get_session)):
+async def delete_relation(
+    relation_id: int,
+    session: AsyncSession = Depends(get_write_session),
+):
     try:
         await session.run("MATCH ()-[r] WHERE id(r)=$id DELETE r", id=relation_id)
     except exceptions.ServiceUnavailable:

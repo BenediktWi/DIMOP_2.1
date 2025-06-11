@@ -2,14 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from neo4j import AsyncSession, exceptions
 
 from .websocket import broadcast
-from ..database import get_session
+from ..database import get_session, get_write_session
 from ..models.schemas import Project, ProjectCreate
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
 
 @router.post("/", response_model=Project)
-async def create_project(project: ProjectCreate, session: AsyncSession = Depends(get_session)):
+async def create_project(
+    project: ProjectCreate,
+    session: AsyncSession = Depends(get_write_session),
+):
     query = """CREATE (p:Project {name: $name}) RETURN id(p) AS id, p.name AS name"""
     try:
         result = await session.run(query, name=project.name)

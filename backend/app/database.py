@@ -27,3 +27,8 @@ async def get_session(*, write: bool = False) -> AsyncGenerator[AsyncSession, No
         default_access_mode="WRITE" if write else "READ"
     ) as session:
         yield session
+
+
+async def get_write_session() -> AsyncGenerator[AsyncSession, None]:
+    async for session in get_session(write=True):
+        yield session
