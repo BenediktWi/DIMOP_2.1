@@ -10,6 +10,16 @@ npm install
 npm run dev
 ```
 
+### Tailwind CSS
+
+The `postcss.config.cjs` file configures PostCSS with the
+`tailwindcss` and `autoprefixer` plugins. After running `npm install`
+you can start the development server with `npm run dev`; Vite will
+compile the Tailwind styles automatically using this configuration.
+Production builds created via `npm run build` also compile the CSS so
+no additional steps are required. Ensure you have Node.js 18 or newer
+installed.
+
 ### WebSocket host
 
 The app connects to `localhost:8000` for WebSocket updates by default. Set the
