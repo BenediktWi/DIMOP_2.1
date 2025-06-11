@@ -5,10 +5,12 @@ import useUndoRedo from './components/useUndoRedo'
 import { applyWsMessage, GraphState, WsMessage } from './wsMessage'
 
 export default function App() {
+  // local state & undo/redo stack
   const { state, setState, undo, redo } = useUndoRedo<GraphState>({ nodes: [], edges: [], materials: [] }, 50)
   const [error, setError] = useState<string | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
 
+  // pick up ?project= query param once and remember in localStorage
   const [projectId] = useState(() => {
     const params = new URLSearchParams(window.location.search)
     const query = params.get('project')
@@ -19,9 +21,14 @@ export default function App() {
     return localStorage.getItem('projectId') ?? '1'
   })
 
+  /**
+   * 1️⃣  Initial data fetch (REST)
+   * Fetches the current graph state once when the component mounts or when the
+   * project id changes. The result seeds the undo‑stack and UI.
+   */
   useEffect(() => {
     fetch(`/projects/${projectId}/graph`)
-      .then(r => {
+      .then((r) => {
         if (!r.ok) {
           throw new Error(`HTTP ${r.status}`)
         }
@@ -29,24 +36,34 @@ export default function App() {
       })
       .then(setState)
       .catch(() => setError('Failed to load project data'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId])
 
+  /**
+   * 2️⃣  Live updates via WebSocket
+   * Creates exactly one socket connection per tab & project. Closes it again
+   * when the component unmounts.
+   */
   useEffect(() => {
-    if (wsRef.current) return
+    if (wsRef.current) return // already connected
 
     const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const ws = new WebSocket(`${scheme}://localhost:8000/ws/projects/${projectId}`)
+    const wsUrl = `${scheme}://localhost:8000/ws/projects/${projectId}`
+    console.log(`Attempting to connect WebSocket to: ${wsUrl}`)
+
+    const ws = new WebSocket(wsUrl)
     wsRef.current = ws
 
-    ws.onmessage = ev => {
+    ws.onmessage = (ev) => {
       try {
         const msg: WsMessage = JSON.parse(ev.data)
-        setState(prev => applyWsMessage(prev, msg))
+        setState((prev) => applyWsMessage(prev, msg))
       } catch {
         console.error('Invalid WS message', ev.data)
       }
     }
 
+    // tidy up on unmount or before refresh
     const handleClose = () => {
       if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
         ws.close()
@@ -60,6 +77,7 @@ export default function App() {
       handleClose()
       wsRef.current = null
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setState, projectId])
 
   if (error) {

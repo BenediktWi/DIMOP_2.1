@@ -11,7 +11,7 @@ async def broadcast(project_id: int, message: dict):
         await ws.send_json(message)
 
 
-@router.websocket("/ws/projects/{project_id}")
+@router.websocket("/socket/projects/{project_id}")
 async def websocket_endpoint(websocket: WebSocket, project_id: int):
     await websocket.accept()
     connections.setdefault(project_id, []).append(websocket)
