@@ -13,7 +13,10 @@ async def create_project(
     project: ProjectCreate,
     session: AsyncSession = Depends(get_write_session),
 ):
-    query = """CREATE (p:Project {name: $name}) RETURN id(p) AS id, p.name AS name"""
+    query = (
+        "CREATE (p:Project {name: $name}) "
+        "RETURN id(p) AS id, p.name AS name"
+    )
     try:
         result = await session.run(query, name=project.name)
     except exceptions.ServiceUnavailable:
@@ -26,8 +29,14 @@ async def create_project(
 
 
 @router.get("/{project_id}", response_model=Project)
-async def get_project(project_id: int, session: AsyncSession = Depends(get_session)):
-    query = "MATCH (p:Project) WHERE id(p)=$id RETURN id(p) AS id, p.name AS name"
+async def get_project(
+    project_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    query = (
+        "MATCH (p:Project) WHERE id(p)=$id "
+        "RETURN id(p) AS id, p.name AS name"
+    )
     try:
         result = await session.run(query, id=project_id)
     except exceptions.ServiceUnavailable:
@@ -39,20 +48,33 @@ async def get_project(project_id: int, session: AsyncSession = Depends(get_sessi
 
 
 @router.get("/{project_id}/graph")
-async def get_graph(project_id: int, session: AsyncSession = Depends(get_session)):
-    q_nodes = "MATCH (p:Project)<-[:PART_OF]-(n:Node)-[:USES]->(m:Material) WHERE id(p)=$pid RETURN id(n) AS id, id(m) AS material_id, n.level AS level"
+async def get_graph(
+    project_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    q_nodes = (
+        "MATCH (p:Project)<-[:PART_OF]-(n:Node)-[:USES]->(m:Material) "
+        "WHERE id(p)=$pid RETURN id(n) AS id, id(m) AS material_id, "
+        "n.level AS level"
+    )
     try:
         result = await session.run(q_nodes, pid=project_id)
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
     nodes = await result.data()
-    q_edges = "MATCH (p:Project)<-[:PART_OF]-(s:Node)-[r:LINK]->(t:Node) WHERE id(p)=$pid RETURN id(r) AS id, id(s) AS source, id(t) AS target"
+    q_edges = (
+        "MATCH (p:Project)<-[:PART_OF]-(s:Node)-[r:LINK]->(t:Node) "
+        "WHERE id(p)=$pid RETURN id(r) AS id, id(s) AS source, id(t) AS target"
+    )
     try:
         res_e = await session.run(q_edges, pid=project_id)
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
     edges = await res_e.data()
-    q_mats = "MATCH (m:Material) RETURN id(m) AS id, m.name AS name, m.weight AS weight"
+    q_mats = (
+        "MATCH (m:Material) RETURN id(m) AS id, m.name AS name, "
+        "m.weight AS weight"
+    )
     try:
         res_m = await session.run(q_mats)
     except exceptions.ServiceUnavailable:
