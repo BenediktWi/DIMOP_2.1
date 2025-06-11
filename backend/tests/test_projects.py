@@ -37,7 +37,7 @@ class FakeSessionGraph:
         self._calls += 1
         if self._calls == 1:
             return FakeResultList([
-                {"id": 1, "material_id": 2, "level": 0}
+                {"id": 1, "material_id": 2, "level": 0, "weight": 1.0, "recyclable": True}
             ])
         elif self._calls == 2:
             return FakeResultList([
@@ -72,7 +72,7 @@ def test_get_graph():
     response = client.get("/projects/1/graph")
     assert response.status_code == 200
     assert response.json() == {
-        "nodes": [{"id": 1, "material_id": 2, "level": 0}],
+        "nodes": [{"id": 1, "material_id": 2, "level": 0, "weight": 1.0, "recyclable": True}],
         "edges": [{"id": 10, "source": 1, "target": 2}],
         "materials": [{"id": 2, "name": "Steel", "weight": 7.8}],
     }
