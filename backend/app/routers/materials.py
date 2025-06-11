@@ -2,14 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from neo4j import AsyncSession, exceptions
 
 from .websocket import broadcast
-from ..database import get_session
+from ..database import get_session, get_write_session
 from ..models.schemas import Material, MaterialCreate
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
 
 @router.post("/", response_model=Material)
-async def create_material(material: MaterialCreate, session: AsyncSession = Depends(get_session)):
+async def create_material(
+    material: MaterialCreate,
+    session: AsyncSession = Depends(get_write_session),
+):
     query = """CREATE (m:Material {name: $name, weight: $weight}) RETURN id(m) AS id, m.name AS name, m.weight AS weight"""
     try:
         result = await session.run(query, name=material.name, weight=material.weight)
@@ -36,7 +39,10 @@ async def get_material(material_id: int, session: AsyncSession = Depends(get_ses
 
 
 @router.delete("/{material_id}")
-async def delete_material(material_id: int, session: AsyncSession = Depends(get_session)):
+async def delete_material(
+    material_id: int,
+    session: AsyncSession = Depends(get_write_session),
+):
     try:
         await session.run("MATCH (m:Material) WHERE id(m)=$id DETACH DELETE m", id=material_id)
     except exceptions.ServiceUnavailable:

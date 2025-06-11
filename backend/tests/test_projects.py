@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app import app
-from app.database import get_session
+from app.database import get_session, get_write_session
 
 
 class FakeResult:
@@ -54,7 +54,7 @@ async def override_get_session_graph():
 
 
 def test_create_project():
-    app.dependency_overrides[get_session] = override_get_session
+    app.dependency_overrides[get_write_session] = override_get_session
     client = TestClient(app)
     response = client.post("/projects/", json={"name": "Demo"})
     assert response.status_code == 200

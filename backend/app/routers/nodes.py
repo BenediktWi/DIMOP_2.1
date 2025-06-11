@@ -2,14 +2,17 @@ from fastapi import APIRouter, Depends, HTTPException
 from neo4j import AsyncSession, exceptions
 
 from .websocket import broadcast
-from ..database import get_session
+from ..database import get_session, get_write_session
 from ..models.schemas import Node, NodeCreate
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
 
 
 @router.post("/", response_model=Node)
-async def create_node(node: NodeCreate, session: AsyncSession = Depends(get_session)):
+async def create_node(
+    node: NodeCreate,
+    session: AsyncSession = Depends(get_write_session),
+):
     query = (
         """MATCH (p:Project) WHERE id(p)=$pid MATCH (m:Material) WHERE id(m)=$mid """
         "CREATE (n:Node {level: $level})-[:USES]->(m), (n)-[:PART_OF]->(p) RETURN id(n) AS id"
@@ -43,7 +46,10 @@ async def get_node(node_id: int, session: AsyncSession = Depends(get_session)):
 
 
 @router.delete("/{node_id}")
-async def delete_node(node_id: int, session: AsyncSession = Depends(get_session)):
+async def delete_node(
+    node_id: int,
+    session: AsyncSession = Depends(get_write_session),
+):
     try:
         result = await session.run("MATCH (n:Node)-[:PART_OF]->(p) WHERE id(n)=$id RETURN id(p) AS pid", id=node_id)
     except exceptions.ServiceUnavailable:
