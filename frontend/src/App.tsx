@@ -49,7 +49,7 @@ export default function App() {
 
     const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws'
     const host = import.meta.env.VITE_WS_HOST ?? 'localhost:8000'
-    const wsUrl = `${scheme}://${host}/ws/projects/${projectId}`
+    const wsUrl = `${scheme}://${host}/socket/projects/${projectId}`
     console.log(`Attempting to connect WebSocket to: ${wsUrl}`)
 
     const ws = new WebSocket(wsUrl)
