@@ -30,17 +30,20 @@ async def create_node(
         )
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
+
     record = await result.single()
     if not record:
         raise HTTPException(status_code=404, detail="Resource not found")
+
     node_data = {
-        "id": record["id"],
-        "project_id": node.project_id,
+        "id":          record["id"],
+        "project_id":  node.project_id,
         "material_id": node.material_id,
-        "level": node.level,
-        "weight": node.weight,
-        "recyclable": node.recyclable,
+        "level":       node.level,
+        "weight":      node.weight,
+        "recyclable":  node.recyclable,
     }
+
     await broadcast(node.project_id, {"op": "create_node", "node": node_data})
     return Node(**node_data)
 
