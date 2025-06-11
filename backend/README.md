@@ -17,9 +17,10 @@ The `pyproject.toml` file is kept only for reference and is not used by these in
 
 ## Running tests
 
-The `tests/` directory contains pytest-based tests. They use a mocked Neo4j session so no database is required. Ensure the requirements are installed and run the tests from within `backend`:
+The `tests/` directory contains pytest-based tests. They use a mocked Neo4j session so no database is required. Install the dependencies and run the tests from within `backend`:
 
 ```bash
 cd backend
+pip install -r requirements.txt
 pytest
 ```
