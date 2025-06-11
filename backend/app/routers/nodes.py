@@ -31,13 +31,14 @@ async def create_node(
     record = await result.single()
     if not record:
         raise HTTPException(status_code=404, detail="Resource not found")
-    await broadcast(node.project_id, {"op": "create_node", "id": record["id"]})
-    return Node(
-        id=record["id"],
-        project_id=node.project_id,
-        material_id=node.material_id,
-        level=node.level,
-    )
+    node_data = {
+        "id": record["id"],
+        "project_id": node.project_id,
+        "material_id": node.material_id,
+        "level": node.level,
+    }
+    await broadcast(node.project_id, {"op": "create_node", "node": node_data})
+    return Node(**node_data)
 
 
 @router.get("/{node_id}", response_model=Node)
