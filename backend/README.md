@@ -10,6 +10,8 @@ NEO4J_PASSWORD=your_password uvicorn app.main:app --reload
 
 By default the app expects a local Neo4j instance reachable at `bolt://localhost:7687` with user/password `neo4j/your_password`. Set `NEO4J_URI`, `NEO4J_USER`, and `NEO4J_PASSWORD` to override.
 
+During startup the app verifies the database connection. Set the environment variable `TESTING=1` to skip this check (used by the test suite).
+
 The `pyproject.toml` file is kept only for reference and is not used by these instructions.
 
 

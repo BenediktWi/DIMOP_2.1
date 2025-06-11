@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 
 from .database import verify_connectivity
@@ -9,7 +11,8 @@ app = FastAPI(title="Circular Design Toolkit")
 
 @app.on_event("startup")
 async def startup() -> None:
-    await verify_connectivity()
+    if not os.getenv("TESTING"):
+        await verify_connectivity()
 
 app.include_router(projects.router)
 app.include_router(materials.router)
