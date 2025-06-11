@@ -42,17 +42,17 @@ async def get_graph(project_id: int, session: AsyncSession = Depends(get_session
         result = await session.run(q_nodes, pid=project_id)
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
-    nodes = [dict(record) for record in await result.to_list()]
+    nodes = await result.data()
     q_edges = "MATCH (p:Project)<-[:PART_OF]-(s:Node)-[r:LINK]->(t:Node) WHERE id(p)=$pid RETURN id(r) AS id, id(s) AS source, id(t) AS target"
     try:
         res_e = await session.run(q_edges, pid=project_id)
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
-    edges = [dict(record) for record in await res_e.to_list()]
+    edges = await res_e.data()
     q_mats = "MATCH (m:Material) RETURN id(m) AS id, m.name AS name, m.weight AS weight"
     try:
         res_m = await session.run(q_mats)
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
-    materials = [dict(record) for record in await res_m.to_list()]
+    materials = await res_m.data()
     return {"nodes": nodes, "edges": edges, "materials": materials}
