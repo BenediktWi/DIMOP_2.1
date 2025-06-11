@@ -5,8 +5,7 @@ import useUndoRedo from './components/useUndoRedo'
 import { applyWsMessage, GraphState, WsMessage } from './wsMessage'
 
 export default function App() {
-  const [data, setData] = useState<GraphState>({ nodes: [], edges: [], materials: [] })
-  const { state, setState, undo, redo } = useUndoRedo<GraphState>(data, 50)
+  const { state, setState, undo, redo } = useUndoRedo<GraphState>({ nodes: [], edges: [], materials: [] }, 50)
   const [error, setError] = useState<string | null>(null)
 
   const [projectId] = useState(() => {
