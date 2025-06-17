@@ -46,6 +46,7 @@ describe('applyWsMessage', () => {
         atomic: false,
         reusable: false,
         connection_type: 'bolt',
+        weight: null,
       },
     })
     const n = result.nodes[0]
