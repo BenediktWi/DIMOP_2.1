@@ -41,40 +41,38 @@ class FakeSessionGraph:
     async def run(self, query, **params):
         self._calls += 1
         if self._calls == 1:
-            return FakeResultList([
-                {
-                    "id": 1,
-                    "material_id": 2,
-                    "name": "Parent",
-                    "parent_id": None,
-                    "atomic": False,
-                    "reusable": False,
-                    "connection_type": "bolt",
-                    "level": 0,
-                    "weight": 0.0,
-                    "recyclable": True,
-                },
-                {
-                    "id": 2,
-                    "material_id": 3,
-                    "name": "Child",
-                    "parent_id": 1,
-                    "atomic": True,
-                    "reusable": False,
-                    "connection_type": "bolt",
-                    "level": 1,
-                    "weight": 1.0,
-                    "recyclable": True,
-                },
-            ])
+            return FakeResultList(
+                [
+                    {
+                        "id": 1,
+                        "material_id": 2,
+                        "name": "Parent",
+                        "parent_id": None,
+                        "atomic": False,
+                        "reusable": False,
+                        "connection_type": 1,
+                        "level": 0,
+                        "weight": 0.0,
+                        "recyclable": True,
+                    },
+                    {
+                        "id": 2,
+                        "material_id": 3,
+                        "name": "Child",
+                        "parent_id": 1,
+                        "atomic": True,
+                        "reusable": False,
+                        "connection_type": 1,
+                        "level": 1,
+                        "weight": 1.0,
+                        "recyclable": True,
+                    },
+                ]
+            )
         elif self._calls == 2:
-            return FakeResultList([
-                {"id": 10, "source": 1, "target": 2}
-            ])
+            return FakeResultList([{"id": 10, "source": 1, "target": 2}])
         else:
-            return FakeResultList([
-                {"id": 2, "name": "Steel", "weight": 7.8}
-            ])
+            return FakeResultList([{"id": 2, "name": "Steel", "weight": 7.8}])
 
 
 async def override_get_session():
@@ -112,7 +110,7 @@ def test_get_graph():
                 "parent_id": None,
                 "atomic": False,
                 "reusable": False,
-                "connection_type": "bolt",
+                "connection_type": 1,
                 "level": 0,
                 "weight": 1.0,
                 "recyclable": True,
@@ -124,7 +122,7 @@ def test_get_graph():
                 "parent_id": 1,
                 "atomic": True,
                 "reusable": False,
-                "connection_type": "bolt",
+                "connection_type": 1,
                 "level": 1,
                 "weight": 1.0,
                 "recyclable": True,
@@ -148,7 +146,7 @@ def test_create_node():
             "parent_id": None,
             "atomic": True,
             "reusable": False,
-            "connection_type": "bolt",
+            "connection_type": 1,
             "level": 0,
             "weight": 1.0,
             "recyclable": True,
@@ -163,7 +161,7 @@ def test_create_node():
         "parent_id": None,
         "atomic": True,
         "reusable": False,
-        "connection_type": "bolt",
+        "connection_type": 1,
         "level": 0,
         "weight": 1.0,
         "recyclable": True,

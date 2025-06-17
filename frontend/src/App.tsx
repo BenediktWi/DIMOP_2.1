@@ -17,7 +17,7 @@ export default function App() {
     atomic: false,
     weight: 1,
     reusable: false,
-    connection_type: '',
+    connection_type: 0,
     material_id: '' as string | number,
   })
 
@@ -169,7 +169,7 @@ export default function App() {
           atomic: false,
           weight: 1,
           reusable: false,
-          connection_type: '',
+          connection_type: 0,
           material_id: '',
         })
       })
@@ -235,11 +235,16 @@ export default function App() {
               />
               Reusable
             </label>
-            <input
-              placeholder="Connection Type"
+            <select
               value={newNode.connection_type}
-              onChange={e => setNewNode({ ...newNode, connection_type: e.target.value })}
-            />
+              onChange={e =>
+                setNewNode({ ...newNode, connection_type: Number(e.target.value) })
+              }
+            >
+              {[0, 1, 2, 3, 4, 5].map(n => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
             <input
               type="number"
               placeholder="Material ID"
