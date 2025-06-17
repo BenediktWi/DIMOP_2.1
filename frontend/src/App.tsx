@@ -224,6 +224,7 @@ export default function App() {
               step="any"
               placeholder="Weight"
               value={newNode.weight}
+              disabled={!newNode.atomic}
               onChange={e => setNewNode({ ...newNode, weight: Number(e.target.value) })}
             />
             <label className="block">
