@@ -16,7 +16,7 @@ export default function App() {
     parent_id: '',
     atomic: false,
     weight: 1,
-    reusable: false,
+    recyclable: false,
     connection_type: '',
     material_id: '' as string | number,
   })
@@ -136,14 +136,10 @@ export default function App() {
     e.preventDefault()
     const payload = {
       project_id: Number(projectId),
-      name: newNode.name,
-      level: Number(newNode.level),
-      parent_id: newNode.parent_id === '' ? null : Number(newNode.parent_id),
-      atomic: newNode.atomic,
-      weight: Number(newNode.weight),
-      reusable: newNode.reusable,
-      connection_type: newNode.connection_type,
       material_id: Number(newNode.material_id || 0),
+      level: Number(newNode.level),
+      weight: Number(newNode.weight),
+      recyclable: newNode.recyclable,
     }
     fetch('/nodes/', {
       method: 'POST',
@@ -168,7 +164,7 @@ export default function App() {
           parent_id: '',
           atomic: false,
           weight: 1,
-          reusable: false,
+          recyclable: false,
           connection_type: '',
           material_id: '',
         })
@@ -230,10 +226,10 @@ export default function App() {
             <label className="block">
               <input
                 type="checkbox"
-                checked={newNode.reusable}
-                onChange={e => setNewNode({ ...newNode, reusable: e.target.checked })}
+                checked={newNode.recyclable}
+                onChange={e => setNewNode({ ...newNode, recyclable: e.target.checked })}
               />
-              Reusable
+              Recyclable
             </label>
             <input
               placeholder="Connection Type"
