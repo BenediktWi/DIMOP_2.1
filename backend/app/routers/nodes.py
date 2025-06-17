@@ -13,19 +13,29 @@ async def create_node(
     node: NodeCreate,
     session: AsyncSession = Depends(get_write_session),
 ):
-    query = (
-        "MATCH (p:Project) WHERE id(p)=$pid "
-        "MATCH (m:Material) WHERE id(m)=$mid "
-        "CREATE (n:Node {level: $level})-[:USES]->(m), "
-        "(n)-[:PART_OF]->(p) RETURN id(n) AS id"
-    )
-    try:
-        result = await session.run(
-            query,
-            pid=node.project_id,
-            mid=node.material_id,
-            level=node.level,
+    params = {
+        "pid": node.project_id,
+        "mid": node.material_id,
+        "level": node.level,
+    }
+    if node.parent_id is not None:
+        query = (
+            "MATCH (p:Project) WHERE id(p)=$pid "
+            "MATCH (m:Material) WHERE id(m)=$mid "
+            "MATCH (parent:Node) WHERE id(parent)=$parent_id "
+            "CREATE (n:Node {level: $level})-[:USES]->(m), "
+            "(n)-[:PART_OF]->(p), (parent)-[:PARENT_OF]->(n) RETURN id(n) AS id"
         )
+        params["parent_id"] = node.parent_id
+    else:
+        query = (
+            "MATCH (p:Project) WHERE id(p)=$pid "
+            "MATCH (m:Material) WHERE id(m)=$mid "
+            "CREATE (n:Node {level: $level})-[:USES]->(m), "
+            "(n)-[:PART_OF]->(p) RETURN id(n) AS id"
+        )
+    try:
+        result = await session.run(query, **params)
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
     record = await result.single()
@@ -37,6 +47,7 @@ async def create_node(
         project_id=node.project_id,
         material_id=node.material_id,
         level=node.level,
+        parent_id=node.parent_id,
     )
 
 
