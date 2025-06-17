@@ -17,6 +17,7 @@ export default function App() {
     atomic: false,
     weight: 1,
     reusable: false,
+    recyclable: false,
     connection_type: 0,
     material_id: '' as string | number,
   })
@@ -148,6 +149,7 @@ export default function App() {
       parent_id: newNode.parent_id === '' ? null : Number(newNode.parent_id),
       atomic: newNode.atomic,
       reusable: newNode.reusable,
+      recyclable: newNode.recyclable,
       connection_type: newNode.connection_type,
       material_id: Number(newNode.material_id || 0),
     }
@@ -178,6 +180,7 @@ export default function App() {
           atomic: false,
           weight: 1,
           reusable: false,
+          recyclable: false,
           connection_type: 0,
           material_id: '',
         })
@@ -243,6 +246,14 @@ export default function App() {
                 onChange={e => setNewNode({ ...newNode, reusable: e.target.checked })}
               />
               Reusable
+            </label>
+            <label className="block">
+              <input
+                type="checkbox"
+                checked={newNode.recyclable}
+                onChange={e => setNewNode({ ...newNode, recyclable: e.target.checked })}
+              />
+              Recyclable
             </label>
             <select
               value={newNode.connection_type}
