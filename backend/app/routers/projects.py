@@ -84,18 +84,23 @@ async def get_graph(
     materials = await res_m.data()
     node_map = {n["id"]: n for n in nodes}
 
-    def calc_weight(nid: int) -> float:
+    def calc_weight(nid: int, visited: set[int]) -> float:
+        if nid in visited:
+            raise HTTPException(status_code=400, detail="Cycle detected")
+        visited.add(nid)
         node = node_map[nid]
         if node.get("atomic"):
+            visited.remove(nid)
             return node.get("weight", 0)
         total = 0.0
         for ch in nodes:
             if ch.get("parent_id") == nid:
-                total += calc_weight(ch["id"])
+                total += calc_weight(ch["id"], visited)
         node["weight"] = total
+        visited.remove(nid)
         return total
 
     for n in nodes:
         if not n.get("atomic"):
-            calc_weight(n["id"])
+            calc_weight(n["id"], set())
     return {"nodes": nodes, "edges": edges, "materials": materials}
