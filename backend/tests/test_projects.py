@@ -44,12 +44,13 @@ class FakeSessionNode:
 
 
 class FakeSessionScore:
-    """Session for scoring projects."""
-
-    def __init__(self):
-        self._first = True
+    """
+    Session for scoring projects.
+    `ctype` is an **integer enum** everywhere now.
+    """
 
     async def run(self, query, **params):
+        # The scorer only calls once for node data, otherwise it discards the result.
         if "RETURN id(n) AS nid" in query:
             return FakeResultList(
                 [
@@ -57,20 +58,19 @@ class FakeSessionScore:
                         "nid": 1,
                         "co2": 2.0,
                         "weight": 1.0,
-                        "ctype": 1,
+                        "ctype": 1,     # glued, welded… (integer enum)
                         "reusable": False,
                     },
                     {
                         "nid": 2,
                         "co2": 1.0,
                         "weight": 2.0,
-                        "ctype": "bolt",
+                        "ctype": 2,     # bolted, clipped… (integer enum)
                         "reusable": True,
                     },
                 ]
             )
-        else:
-            return FakeResult(None)
+        return FakeResult(None)
 
 
 class FakeSessionGraph:
@@ -86,7 +86,7 @@ class FakeSessionGraph:
 
     async def run(self, query, **params):
         self._calls += 1
-        if self._calls == 1:  # nodes
+        if self._calls == 1:            # nodes
             return FakeResultList(
                 [
                     {
@@ -98,7 +98,7 @@ class FakeSessionGraph:
                         "reusable": False,
                         "connection_type": 1,
                         "level": 0,
-                        "weight": 1.0,  # matches test expectation
+                        "weight": 1.0,   # matches test expectation
                         "recyclable": True,
                     },
                     {
@@ -115,31 +115,31 @@ class FakeSessionGraph:
                     },
                 ]
             )
-        elif self._calls == 2:  # edges
+        if self._calls == 2:            # edges
             return FakeResultList([{"id": 10, "source": 1, "target": 2}])
-        else:  # materials
-            return FakeResultList(
-                [
-                    {
-                        "id": 2,
-                        "name": "Steel",
-                        "weight": 7.8,
-                        "co2_value": 1.0,
-                        "hardness": 10.0,
-                    }
-                ]
-            )
+        # materials
+        return FakeResultList(
+            [
+                {
+                    "id": 2,
+                    "name": "Steel",
+                    "weight": 7.8,
+                    "co2_value": 1.0,
+                    "hardness": 10.0,
+                }
+            ]
+        )
 
 
 class FakeSessionGraphCycle:
-    """Same pattern as above, but returns a graph with a cycle so the endpoint errors."""
+    """Same pattern as above, but returns a graph that contains a cycle."""
 
     def __init__(self):
         self._calls = 0
 
     async def run(self, query, **params):
         self._calls += 1
-        if self._calls == 1:  # nodes
+        if self._calls == 1:            # nodes
             return FakeResultList(
                 [
                     {
@@ -168,25 +168,25 @@ class FakeSessionGraphCycle:
                     },
                 ]
             )
-        elif self._calls == 2:  # edges (cycle present)
+        if self._calls == 2:            # edges (cycle present)
             return FakeResultList(
                 [
                     {"id": 10, "source": 1, "target": 2},
                     {"id": 11, "source": 2, "target": 1},
                 ]
             )
-        else:  # materials
-            return FakeResultList(
-                [
-                    {
-                        "id": 2,
-                        "name": "Steel",
-                        "weight": 7.8,
-                        "co2_value": 1.0,
-                        "hardness": 10.0,
-                    }
-                ]
-            )
+        # materials
+        return FakeResultList(
+            [
+                {
+                    "id": 2,
+                    "name": "Steel",
+                    "weight": 7.8,
+                    "co2_value": 1.0,
+                    "hardness": 10.0,
+                }
+            ]
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -329,6 +329,7 @@ def test_create_node_atomic():
 def test_create_node_non_atomic():
     app.dependency_overrides[get_write_session] = override_get_session_node
     client = TestClient(app)
+
     response = client.post(
         "/nodes/",
         json={
@@ -338,7 +339,7 @@ def test_create_node_non_atomic():
             "parent_id": None,
             "atomic": False,
             "reusable": False,
-            "connection_type": "bolt",
+            "connection_type": 1,
             "level": 0,
             "recyclable": True,
         },
@@ -352,17 +353,19 @@ def test_create_node_non_atomic():
         "parent_id": None,
         "atomic": False,
         "reusable": False,
-        "connection_type": "bolt",
+        "connection_type": 1,
         "level": 0,
         "weight": None,
         "recyclable": True,
     }
+
     app.dependency_overrides.clear()
 
 
 def test_atomic_weight_required():
     app.dependency_overrides[get_write_session] = override_get_session_node
     client = TestClient(app)
+
     response = client.post(
         "/nodes/",
         json={
@@ -372,12 +375,61 @@ def test_atomic_weight_required():
             "parent_id": None,
             "atomic": True,
             "reusable": False,
-            "connection_type": "bolt",
+            "connection_type": 1,
             "level": 0,
             "recyclable": True,
         },
     )
     assert response.status_code == 422
+
+    app.dependency_overrides.clear()
+
+
+def test_negative_weight():
+    app.dependency_overrides[get_write_session] = override_get_session_node
+    client = TestClient(app)
+
+    response = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 2,
+            "name": "Child",
+            "parent_id": None,
+            "atomic": True,
+            "reusable": False,
+            "connection_type": 1,
+            "level": 0,
+            "weight": -1.0,
+            "recyclable": True,
+        },
+    )
+    assert response.status_code == 422
+
+    app.dependency_overrides.clear()
+
+
+def test_zero_weight():
+    app.dependency_overrides[get_write_session] = override_get_session_node
+    client = TestClient(app)
+
+    response = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 2,
+            "name": "Child",
+            "parent_id": None,
+            "atomic": True,
+            "reusable": False,
+            "connection_type": 1,
+            "level": 0,
+            "weight": 0,
+            "recyclable": True,
+        },
+    )
+    assert response.status_code == 422
+
     app.dependency_overrides.clear()
 
 
