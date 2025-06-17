@@ -8,6 +8,7 @@ export interface Component {
   reusable?: boolean
   connection_type?: string
   material_id?: number
+  sustainability_score?: number
   position?: { x: number; y: number }
 }
 
@@ -15,6 +16,7 @@ export interface Material {
   id: number
   name?: string
   weight?: number
+  co2_value?: number
 }
 
 export interface Edge {

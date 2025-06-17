@@ -13,10 +13,7 @@ async def create_project(
     project: ProjectCreate,
     session: AsyncSession = Depends(get_write_session),
 ):
-    query = (
-        "CREATE (p:Project {name: $name}) "
-        "RETURN id(p) AS id, p.name AS name"
-    )
+    query = "CREATE (p:Project {name: $name}) " "RETURN id(p) AS id, p.name AS name"
     try:
         result = await session.run(query, name=project.name)
     except exceptions.ServiceUnavailable:
@@ -33,10 +30,7 @@ async def get_project(
     project_id: int,
     session: AsyncSession = Depends(get_session),
 ):
-    query = (
-        "MATCH (p:Project) WHERE id(p)=$id "
-        "RETURN id(p) AS id, p.name AS name"
-    )
+    query = "MATCH (p:Project) WHERE id(p)=$id " "RETURN id(p) AS id, p.name AS name"
     try:
         result = await session.run(query, id=project_id)
     except exceptions.ServiceUnavailable:
@@ -57,7 +51,8 @@ async def get_graph(
         "WHERE id(p)=$pid RETURN id(n) AS id, id(m) AS material_id, "
         "n.name AS name, n.parent_id AS parent_id, n.atomic AS atomic, "
         "n.reusable AS reusable, n.connection_type AS connection_type, "
-        "n.level AS level, n.weight AS weight, n.recyclable AS recyclable"
+        "n.level AS level, n.weight AS weight, n.recyclable AS recyclable, "
+        "n.sustainability_score AS sustainability_score"
     )
     try:
         result = await session.run(q_nodes, pid=project_id)
@@ -75,7 +70,7 @@ async def get_graph(
     edges = await res_e.data()
     q_mats = (
         "MATCH (m:Material) RETURN id(m) AS id, m.name AS name, "
-        "m.weight AS weight"
+        "m.weight AS weight, m.co2_value AS co2_value"
     )
     try:
         res_m = await session.run(q_mats)

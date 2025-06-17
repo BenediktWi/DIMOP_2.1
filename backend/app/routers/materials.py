@@ -14,14 +14,15 @@ async def create_material(
     session: AsyncSession = Depends(get_write_session),
 ):
     query = (
-        "CREATE (m:Material {name: $name, weight: $weight}) "
-        "RETURN id(m) AS id, m.name AS name, m.weight AS weight"
+        "CREATE (m:Material {name: $name, weight: $weight, co2_value: $co2}) "
+        "RETURN id(m) AS id, m.name AS name, m.weight AS weight, m.co2_value AS co2_value"
     )
     try:
         result = await session.run(
             query,
             name=material.name,
             weight=material.weight,
+            co2=material.co2_value,
         )
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
@@ -33,6 +34,7 @@ async def create_material(
         id=record["id"],
         name=record["name"],
         weight=record["weight"],
+        co2_value=record["co2_value"],
     )
 
 
@@ -43,7 +45,7 @@ async def get_material(
 ):
     query = (
         "MATCH (m:Material) WHERE id(m)=$id "
-        "RETURN id(m) AS id, m.name AS name, m.weight AS weight"
+        "RETURN id(m) AS id, m.name AS name, m.weight AS weight, m.co2_value AS co2_value"
     )
     try:
         result = await session.run(query, id=material_id)
@@ -56,6 +58,7 @@ async def get_material(
         id=record["id"],
         name=record["name"],
         weight=record["weight"],
+        co2_value=record["co2_value"],
     )
 
 
