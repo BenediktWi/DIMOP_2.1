@@ -24,3 +24,20 @@ cd backend
 pip install -r requirements.txt
 pytest
 ```
+
+## Creating nodes
+
+When sending a `POST` request to `/nodes/` the backend first verifies that both
+the referenced project and material exist. If either lookup fails the endpoint
+responds with a `404 Not Found` error.
+
+An example log sequence might look like:
+
+```text
+INFO:     127.0.0.1:53439 - "POST /materials/ HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53443 - "POST /nodes/ HTTP/1.1" 404 Not Found
+```
+
+The second line shows that the node creation failed because the project or
+material was not found. Ensure that `project_id` and `material_id` in the
+request body refer to existing records before calling this endpoint.
