@@ -28,7 +28,7 @@ class NodeBase(BaseModel):
     parent_id: int | None = None
     atomic: bool
     reusable: bool
-    connection_type: str | None = None
+    connection_type: int | None = Field(None, ge=0, le=5)
     level: int
     weight: float
     recyclable: bool

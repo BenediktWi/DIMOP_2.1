@@ -22,7 +22,7 @@ describe('applyWsMessage', () => {
         atomic: true,
         weight: 3,
         reusable: false,
-        connection_type: 'bolted',
+        connection_type: 2,
         material_id: 5,
       },
     })
@@ -31,7 +31,7 @@ describe('applyWsMessage', () => {
     expect(n.level).toBe(1)
     expect(n.atomic).toBe(true)
     expect(n.weight).toBe(3)
-    expect(n.connection_type).toBe('bolted')
+    expect(n.connection_type).toBe(2)
   })
 
   it('ignores unknown op', () => {
