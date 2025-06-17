@@ -134,16 +134,18 @@ export default function App() {
 
   const handleNodeSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    const payload = {
+    const payload: any = {
       project_id: Number(projectId),
       name: newNode.name,
       level: Number(newNode.level),
       parent_id: newNode.parent_id === '' ? null : Number(newNode.parent_id),
       atomic: newNode.atomic,
-      weight: Number(newNode.weight),
       reusable: newNode.reusable,
       connection_type: newNode.connection_type,
       material_id: Number(newNode.material_id || 0),
+    }
+    if (newNode.atomic) {
+      payload.weight = Number(newNode.weight)
     }
     fetch('/nodes/', {
       method: 'POST',
@@ -224,7 +226,7 @@ export default function App() {
               step="any"
               placeholder="Weight"
               value={newNode.weight}
-              disabled={newNode.atomic}
+              disabled={!newNode.atomic}
               onChange={e => setNewNode({ ...newNode, weight: Number(e.target.value) })}
             />
             <label className="block">

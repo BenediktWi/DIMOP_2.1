@@ -13,11 +13,21 @@ async def create_node(
     node: NodeCreate,
     session: AsyncSession = Depends(get_write_session),
 ):
+    props = [
+        "name: $name",
+        "parent_id: $parent_id",
+        "atomic: $atomic",
+        "reusable: $reusable",
+        "connection_type: $connection_type",
+        "level: $level",
+    ]
+    if node.atomic:
+        props.append("weight: $weight")
+    props.append("recyclable: $recyclable")
     query = (
         "MATCH (p:Project) WHERE id(p)=$pid "
         "MATCH (m:Material) WHERE id(m)=$mid "
-        "CREATE (n:Node {name: $name, parent_id: $parent_id, atomic: $atomic, reusable: $reusable, "
-        "connection_type: $connection_type, level: $level, weight: $weight, recyclable: $recyclable})-[:USES]->(m), "
+        f"CREATE (n:Node {{{', '.join(props)}}})-[:USES]->(m), "
         "(n)-[:PART_OF]->(p) RETURN id(n) AS id"
     )
     try:
@@ -31,7 +41,7 @@ async def create_node(
             reusable=node.reusable,
             connection_type=node.connection_type,
             level=node.level,
-            weight=node.weight,
+            **({"weight": node.weight} if node.atomic else {}),
             recyclable=node.recyclable,
         )
     except exceptions.ServiceUnavailable:
@@ -51,7 +61,7 @@ async def create_node(
         "reusable":    node.reusable,
         "connection_type": node.connection_type,
         "level":       node.level,
-        "weight":      node.weight,
+        "weight":      node.weight if node.atomic else None,
         "recyclable":  node.recyclable,
     }
 

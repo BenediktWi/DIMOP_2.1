@@ -136,7 +136,7 @@ def test_get_graph():
     app.dependency_overrides.clear()
 
 
-def test_create_node():
+def test_create_node_atomic():
     app.dependency_overrides[get_write_session] = override_get_session_node
     client = TestClient(app)
     response = client.post(
@@ -168,4 +168,59 @@ def test_create_node():
         "weight": 1.0,
         "recyclable": True,
     }
+    app.dependency_overrides.clear()
+
+
+def test_create_node_non_atomic():
+    app.dependency_overrides[get_write_session] = override_get_session_node
+    client = TestClient(app)
+    response = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 2,
+            "name": "Group",
+            "parent_id": None,
+            "atomic": False,
+            "reusable": False,
+            "connection_type": "bolt",
+            "level": 0,
+            "recyclable": True,
+        },
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": 1,
+        "project_id": 1,
+        "material_id": 2,
+        "name": "Group",
+        "parent_id": None,
+        "atomic": False,
+        "reusable": False,
+        "connection_type": "bolt",
+        "level": 0,
+        "weight": None,
+        "recyclable": True,
+    }
+    app.dependency_overrides.clear()
+
+
+def test_atomic_weight_required():
+    app.dependency_overrides[get_write_session] = override_get_session_node
+    client = TestClient(app)
+    response = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 2,
+            "name": "Child",
+            "parent_id": None,
+            "atomic": True,
+            "reusable": False,
+            "connection_type": "bolt",
+            "level": 0,
+            "recyclable": True,
+        },
+    )
+    assert response.status_code == 422
     app.dependency_overrides.clear()
