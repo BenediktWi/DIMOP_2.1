@@ -7,11 +7,13 @@ from pydantic import BaseModel, Field, model_validator
 # Materials
 # ---------------------------------------------------------------------------
 
+
 class MaterialBase(BaseModel):
     name: str = Field(..., example="Aluminum")
     weight: float = Field(..., gt=0)
     co2_value: float = Field(..., gt=0)
-    hardness: float = Field(..., gt=0)           # kept from Development_Nachhaltigkeit
+    hardness: float = Field(..., gt=0)  # kept from Development_Nachhaltigkeit
+
 
 class MaterialCreate(MaterialBase):
     pass
@@ -28,6 +30,7 @@ class Material(MaterialBase):
 # Nodes
 # ---------------------------------------------------------------------------
 
+
 class NodeBase(BaseModel):
     project_id: int
     material_id: int
@@ -35,7 +38,7 @@ class NodeBase(BaseModel):
     parent_id: int | None = None
     atomic: bool
     reusable: bool
-    connection_type: int | None = Field(None, ge=0, le=5)
+    connection_type: str | int | None = None
     level: int
     weight: float | None = Field(None, gt=0)
     recyclable: bool
@@ -45,6 +48,18 @@ class NodeBase(BaseModel):
         """If a node is atomic it must carry its own weight."""
         if self.atomic and self.weight is None:
             raise ValueError("weight must be provided when node is atomic")
+        return self
+
+    @model_validator(mode="after")
+    def _validate_connection_type(self) -> "NodeBase":
+        """Ensure connection_type is either within range when numeric or any string."""
+        if isinstance(self.connection_type, int):
+            if not 0 <= self.connection_type <= 5:
+                raise ValueError("connection_type numeric must be between 0 and 5")
+        elif self.connection_type is not None and not isinstance(
+            self.connection_type, str
+        ):
+            raise ValueError("connection_type must be int, str, or None")
         return self
 
 
@@ -62,6 +77,7 @@ class Node(NodeBase):
 # ---------------------------------------------------------------------------
 # Relations
 # ---------------------------------------------------------------------------
+
 
 class RelationBase(BaseModel):
     project_id: int
@@ -84,6 +100,7 @@ class Relation(RelationBase):
 # Projects
 # ---------------------------------------------------------------------------
 
+
 class ProjectBase(BaseModel):
     name: str
 
@@ -102,6 +119,7 @@ class Project(ProjectBase):
 # ---------------------------------------------------------------------------
 # Sustainability score tracking (from implement-sustainability-score-tracking)
 # ---------------------------------------------------------------------------
+
 
 class NodeScore(BaseModel):
     id: int
