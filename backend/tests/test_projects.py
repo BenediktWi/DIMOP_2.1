@@ -73,7 +73,13 @@ class FakeSessionGraph:
             ])
         else:
             return FakeResultList([
-                {"id": 2, "name": "Steel", "weight": 7.8}
+                {
+                    "id": 2,
+                    "name": "Steel",
+                    "weight": 7.8,
+                    "co2_value": 1.0,
+                    "hardness": 10.0,
+                }
             ])
 
 
@@ -131,7 +137,13 @@ def test_get_graph():
             },
         ],
         "edges": [{"id": 10, "source": 1, "target": 2}],
-        "materials": [{"id": 2, "name": "Steel", "weight": 7.8}],
+        "materials": [{
+            "id": 2,
+            "name": "Steel",
+            "weight": 7.8,
+            "co2_value": 1.0,
+            "hardness": 10.0,
+        }],
     }
     app.dependency_overrides.clear()
 
