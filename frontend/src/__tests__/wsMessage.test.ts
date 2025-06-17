@@ -10,6 +10,30 @@ describe('applyWsMessage', () => {
     expect(result.nodes[0]).toHaveProperty('position')
   })
 
+  it('preserves component fields on create_node', () => {
+    const state: GraphState = { nodes: [], edges: [], materials: [] }
+    const result = applyWsMessage(state, {
+      op: 'create_node',
+      node: {
+        id: 2,
+        name: 'Comp',
+        level: 1,
+        parent_id: null,
+        atomic: true,
+        weight: 3,
+        reusable: false,
+        connection_type: 'bolted',
+        material_id: 5,
+      },
+    })
+    const n = result.nodes[0]
+    expect(n.name).toBe('Comp')
+    expect(n.level).toBe(1)
+    expect(n.atomic).toBe(true)
+    expect(n.weight).toBe(3)
+    expect(n.connection_type).toBe('bolted')
+  })
+
   it('ignores unknown op', () => {
     const state: GraphState = { nodes: [], edges: [], materials: [] }
     const result = applyWsMessage(state, { op: 'unknown', foo: 'bar' })

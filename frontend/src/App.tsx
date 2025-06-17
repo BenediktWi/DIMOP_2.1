@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react'
 import GraphCanvas from './components/GraphCanvas'
-import MaterialTable from './components/MaterialTable'
+import ComponentTable from './components/ComponentTable'
 import useUndoRedo from './components/useUndoRedo'
 import { applyWsMessage, GraphState, WsMessage } from './wsMessage'
 
@@ -9,6 +9,17 @@ export default function App() {
   const { state, setState, undo, redo } = useUndoRedo<GraphState>({ nodes: [], edges: [], materials: [] }, 50)
   const [error, setError] = useState<string | null>(null)
   const wsRef = useRef<WebSocket | null>(null)
+  const [showNodeForm, setShowNodeForm] = useState(false)
+  const [newNode, setNewNode] = useState({
+    name: '',
+    level: 0,
+    parent_id: '',
+    atomic: false,
+    weight: 1,
+    reusable: false,
+    connection_type: '',
+    material_id: '' as string | number,
+  })
 
   // pick up ?project= query param once and remember in localStorage
   const [projectId] = useState(() => {
@@ -118,23 +129,26 @@ export default function App() {
   }
 
   const addNode = () => {
-    if (!state.materials.length) return
-    const weight = parseFloat(window.prompt('Weight of component', '1') || '1')
-    const materialId = parseInt(
-      window.prompt('Material ID', String(state.materials[0].id)) ||
-        String(state.materials[0].id)
-    )
-    const recyclable = window.confirm('Is this component recyclable?')
+    setShowNodeForm(true)
+  }
+
+  const handleNodeSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const payload = {
+      project_id: Number(projectId),
+      name: newNode.name,
+      level: Number(newNode.level),
+      parent_id: newNode.parent_id === '' ? null : Number(newNode.parent_id),
+      atomic: newNode.atomic,
+      weight: Number(newNode.weight),
+      reusable: newNode.reusable,
+      connection_type: newNode.connection_type,
+      material_id: Number(newNode.material_id || 0),
+    }
     fetch('/nodes/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        project_id: Number(projectId),
-        material_id: materialId,
-        level: 0,
-        weight,
-        recyclable,
-      }),
+      body: JSON.stringify(payload),
     })
       .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
       .then(node =>
@@ -146,6 +160,19 @@ export default function App() {
         )
       )
       .catch(err => console.error(err))
+      .finally(() => {
+        setShowNodeForm(false)
+        setNewNode({
+          name: '',
+          level: 0,
+          parent_id: '',
+          atomic: false,
+          weight: 1,
+          reusable: false,
+          connection_type: '',
+          material_id: '',
+        })
+      })
   }
 
   const handleConnect = (connection: any) => {
@@ -165,6 +192,65 @@ export default function App() {
     <div className="flex h-full w-full">
       <div className="w-2/3 h-full">
         <GraphCanvas nodes={state.nodes} edges={state.edges} onConnectEdge={handleConnect} />
+        {showNodeForm && (
+          <form className="p-2 space-y-2" onSubmit={handleNodeSubmit}>
+            <input
+              placeholder="Name"
+              value={newNode.name}
+              onChange={e => setNewNode({ ...newNode, name: e.target.value })}
+            />
+            <input
+              type="number"
+              placeholder="Level"
+              value={newNode.level}
+              onChange={e => setNewNode({ ...newNode, level: Number(e.target.value) })}
+            />
+            <input
+              type="number"
+              placeholder="Parent ID"
+              value={newNode.parent_id}
+              onChange={e => setNewNode({ ...newNode, parent_id: e.target.value })}
+            />
+            <label className="block">
+              <input
+                type="checkbox"
+                checked={newNode.atomic}
+                onChange={e => setNewNode({ ...newNode, atomic: e.target.checked })}
+              />
+              Atomic
+            </label>
+            <input
+              type="number"
+              step="any"
+              placeholder="Weight"
+              value={newNode.weight}
+              onChange={e => setNewNode({ ...newNode, weight: Number(e.target.value) })}
+            />
+            <label className="block">
+              <input
+                type="checkbox"
+                checked={newNode.reusable}
+                onChange={e => setNewNode({ ...newNode, reusable: e.target.checked })}
+              />
+              Reusable
+            </label>
+            <input
+              placeholder="Connection Type"
+              value={newNode.connection_type}
+              onChange={e => setNewNode({ ...newNode, connection_type: e.target.value })}
+            />
+            <input
+              type="number"
+              placeholder="Material ID"
+              value={newNode.material_id}
+              onChange={e => setNewNode({ ...newNode, material_id: e.target.value })}
+            />
+            <div className="space-x-2">
+              <button type="submit">Create</button>
+              <button type="button" onClick={() => setShowNodeForm(false)}>Cancel</button>
+            </div>
+          </form>
+        )}
         <div className="p-2 space-x-2">
           <button onClick={addNode}>Add Node</button>
           <button onClick={addMaterial}>Add Material</button>
@@ -173,7 +259,7 @@ export default function App() {
         </div>
       </div>
       <div className="w-1/3 h-full">
-        <MaterialTable materials={state.materials} onDelete={() => {}} />
+        <ComponentTable components={state.nodes} />
       </div>
     </div>
   )
