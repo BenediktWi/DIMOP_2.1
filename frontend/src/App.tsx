@@ -4,6 +4,8 @@ import ComponentTable from './components/ComponentTable'
 import useUndoRedo from './components/useUndoRedo'
 import { applyWsMessage, GraphState, WsMessage } from './wsMessage'
 
+const CONNECTION_TYPES = ['SCREW', 'BOLT', 'GLUE', 'WELD', 'NAIL', 'CLIP'] as const
+
 export default function App() {
   // local state & undo/redo stack
   const { state, setState, undo, redo } = useUndoRedo<GraphState>({ nodes: [], edges: [], materials: [] }, 50)
@@ -18,7 +20,7 @@ export default function App() {
     weight: 1,
     reusable: false,
     recyclable: false,
-    connection_type: 0,
+    connection_type: 'SCREW',
     material_id: '' as string | number,
   })
 
@@ -185,7 +187,7 @@ export default function App() {
           weight: 1,
           reusable: false,
           recyclable: false,
-          connection_type: 0,
+          connection_type: 'SCREW',
           material_id: '',
         })
       })
@@ -262,11 +264,11 @@ export default function App() {
             <select
               value={newNode.connection_type}
               onChange={e =>
-                setNewNode({ ...newNode, connection_type: Number(e.target.value) })
+                setNewNode({ ...newNode, connection_type: e.target.value })
               }
             >
-              {[0, 1, 2, 3, 4, 5].map(n => (
-                <option key={n} value={n}>{n}</option>
+              {CONNECTION_TYPES.map(t => (
+                <option key={t} value={t}>{t}</option>
               ))}
             </select>
             <select

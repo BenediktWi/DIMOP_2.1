@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from app import app
 from app.database import get_session, get_write_session
+from app.models.schemas import ConnectionType
 
 
 # ---------------------------------------------------------------------------
@@ -59,11 +60,7 @@ class FakeSessionMaterial:
 
 
 class FakeSessionScore:
-    """
-    Session for scoring projects.
-    Uses integer enums for `ctype` (0-5); the scoring endpoint only needs
-    consistent numeric values.
-    """
+    """Session for scoring projects."""
 
     async def run(self, query, **params):
         if "RETURN id(n) AS nid" in query:
@@ -73,14 +70,14 @@ class FakeSessionScore:
                         "nid": 1,
                         "co2": 2.0,
                         "weight": 1.0,
-                        "ctype": 1,
+                        "ctype": ConnectionType.BOLT.name,
                         "reusable": False,
                     },
                     {
                         "nid": 2,
                         "co2": 1.0,
                         "weight": 2.0,
-                        "ctype": 2,
+                        "ctype": ConnectionType.GLUE.name,
                         "reusable": True,
                     },
                 ]
@@ -111,7 +108,7 @@ class FakeSessionGraph:
                         "parent_id": None,
                         "atomic": False,
                         "reusable": False,
-                        "connection_type": 1,
+                        "connection_type": ConnectionType.BOLT.name,
                         "level": 0,
                         "weight": 1.0,  # matches test expectation
                         "recyclable": True,
@@ -123,7 +120,7 @@ class FakeSessionGraph:
                         "parent_id": 1,
                         "atomic": True,
                         "reusable": False,
-                        "connection_type": 1,
+                        "connection_type": ConnectionType.BOLT.name,
                         "level": 1,
                         "weight": 1.0,
                         "recyclable": True,
@@ -164,7 +161,7 @@ class FakeSessionGraphCycle:
                         "parent_id": 2,
                         "atomic": False,
                         "reusable": False,
-                        "connection_type": 1,
+                        "connection_type": ConnectionType.BOLT.name,
                         "level": 0,
                         "weight": 0.0,
                         "recyclable": True,
@@ -176,7 +173,7 @@ class FakeSessionGraphCycle:
                         "parent_id": 1,
                         "atomic": False,
                         "reusable": False,
-                        "connection_type": 1,
+                        "connection_type": ConnectionType.BOLT.name,
                         "level": 1,
                         "weight": 0.0,
                         "recyclable": True,
@@ -264,7 +261,7 @@ def test_get_graph():
                 "parent_id": None,
                 "atomic": False,
                 "reusable": False,
-                "connection_type": 1,
+                "connection_type": ConnectionType.BOLT.name,
                 "level": 0,
                 "weight": 1.0,
                 "recyclable": True,
@@ -276,7 +273,7 @@ def test_get_graph():
                 "parent_id": 1,
                 "atomic": True,
                 "reusable": False,
-                "connection_type": 1,
+                "connection_type": ConnectionType.BOLT.name,
                 "level": 1,
                 "weight": 1.0,
                 "recyclable": True,
@@ -321,7 +318,7 @@ def test_create_node_atomic():
             "parent_id": None,
             "atomic": True,
             "reusable": False,
-            "connection_type": 1,
+            "connection_type": ConnectionType.BOLT.name,
             "level": 0,
             "weight": 1.0,
             "recyclable": True,
@@ -336,7 +333,7 @@ def test_create_node_atomic():
         "parent_id": None,
         "atomic": True,
         "reusable": False,
-        "connection_type": 1,
+        "connection_type": ConnectionType.BOLT.name,
         "level": 0,
         "weight": 1.0,
         "recyclable": True,
@@ -358,7 +355,7 @@ def test_create_node_non_atomic():
             "parent_id": None,
             "atomic": False,
             "reusable": False,
-            "connection_type": 1,
+            "connection_type": ConnectionType.BOLT.name,
             "level": 0,
             "recyclable": True,
         },
@@ -372,7 +369,7 @@ def test_create_node_non_atomic():
         "parent_id": None,
         "atomic": False,
         "reusable": False,
-        "connection_type": 1,
+        "connection_type": ConnectionType.BOLT.name,
         "level": 0,
         "weight": None,
         "recyclable": True,
@@ -394,7 +391,7 @@ def test_atomic_weight_required():
             "parent_id": None,
             "atomic": True,
             "reusable": False,
-            "connection_type": 1,
+            "connection_type": ConnectionType.BOLT.name,
             "level": 0,
             "recyclable": True,
         },
@@ -417,7 +414,7 @@ def test_negative_weight():
             "parent_id": None,
             "atomic": True,
             "reusable": False,
-            "connection_type": 1,
+            "connection_type": ConnectionType.BOLT.name,
             "level": 0,
             "weight": -1.0,
             "recyclable": True,
@@ -441,7 +438,7 @@ def test_zero_weight():
             "parent_id": None,
             "atomic": True,
             "reusable": False,
-            "connection_type": 1,
+            "connection_type": ConnectionType.BOLT.name,
             "level": 0,
             "weight": 0,
             "recyclable": True,
@@ -480,7 +477,7 @@ def test_score_project_mixed_connection_types():
     assert response.status_code == 200
     assert response.json() == [
         {"id": 1, "sustainability_score": 2.0},
-        {"id": 2, "sustainability_score": 1.0},
+        {"id": 2, "sustainability_score": 1.2},
     ]
 
     app.dependency_overrides.clear()

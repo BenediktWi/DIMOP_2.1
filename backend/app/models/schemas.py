@@ -1,6 +1,18 @@
 from __future__ import annotations
 
+from enum import IntEnum
 from pydantic import BaseModel, Field, model_validator
+
+
+class ConnectionType(IntEnum):
+    """Supported connection types between components."""
+
+    SCREW = 0
+    BOLT = 1
+    GLUE = 2
+    WELD = 3
+    NAIL = 4
+    CLIP = 5
 
 
 # ---------------------------------------------------------------------------
@@ -36,8 +48,8 @@ class NodeBase(BaseModel):
     parent_id: int | None = None
     atomic: bool
     reusable: bool
-    # allow both numeric (enum) and string connection-type identifiers
-    connection_type: int | str | None = None
+    # allow both Enum values and custom string identifiers
+    connection_type: ConnectionType | str | None = None
     level: int
     weight: float | None = Field(None, gt=0)
     recyclable: bool
@@ -56,15 +68,11 @@ class NodeBase(BaseModel):
 
     @model_validator(mode="after")
     def _validate_connection_type(self) -> "NodeBase":
-        """
-        When numeric, `connection_type` must be 0-5 (inclusive);
-        otherwise any string identifier is accepted.
-        """
-        if isinstance(self.connection_type, int):
-            if not 0 <= self.connection_type <= 5:
-                raise ValueError("connection_type numeric must be between 0 and 5")
-        elif self.connection_type is not None and not isinstance(self.connection_type, str):
-            raise ValueError("connection_type must be int, str, or None")
+        """Validate type of ``connection_type``."""
+        if isinstance(self.connection_type, ConnectionType) or self.connection_type is None:
+            return self
+        if not isinstance(self.connection_type, str):
+            raise ValueError("connection_type must be ConnectionType, str, or None")
         return self
 
 

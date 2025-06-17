@@ -22,7 +22,7 @@ describe('applyWsMessage', () => {
         atomic: true,
         weight: 3,
         reusable: false,
-        connection_type: 2,
+        connection_type: 'GLUE',
         material_id: 5,
       },
     })
@@ -31,7 +31,7 @@ describe('applyWsMessage', () => {
     expect(n.level).toBe(1)
     expect(n.atomic).toBe(true)
     expect(n.weight).toBe(3)
-    expect(n.connection_type).toBe(2)
+    expect(n.connection_type).toBe('GLUE')
   })
 
   it('omits weight for non atomic node', () => {
@@ -45,7 +45,7 @@ describe('applyWsMessage', () => {
         parent_id: null,
         atomic: false,
         reusable: false,
-        connection_type: 'bolt',
+        connection_type: 'BOLT',
       },
     })
     const n = result.nodes[0]

@@ -6,7 +6,7 @@ export interface Component {
   atomic?: boolean
   weight?: number
   reusable?: boolean
-  connection_type?: number
+  connection_type?: string | number
   material_id?: number
   sustainability_score?: number
   position?: { x: number; y: number }
