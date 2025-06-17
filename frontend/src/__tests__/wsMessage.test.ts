@@ -22,7 +22,7 @@ describe('applyWsMessage', () => {
         atomic: true,
         weight: 3,
         reusable: false,
-        connection_type: 'bolted',
+        connection_type: 2,
         material_id: 5,
       },
     })
@@ -31,7 +31,26 @@ describe('applyWsMessage', () => {
     expect(n.level).toBe(1)
     expect(n.atomic).toBe(true)
     expect(n.weight).toBe(3)
-    expect(n.connection_type).toBe('bolted')
+    expect(n.connection_type).toBe(2)
+  })
+
+  it('omits weight for non atomic node', () => {
+    const state: GraphState = { nodes: [], edges: [], materials: [] }
+    const result = applyWsMessage(state, {
+      op: 'create_node',
+      node: {
+        id: 3,
+        name: 'Group',
+        level: 0,
+        parent_id: null,
+        atomic: false,
+        reusable: false,
+        connection_type: 'bolt',
+      },
+    })
+    const n = result.nodes[0]
+    expect(n.atomic).toBe(false)
+    expect(n.weight).toBeUndefined()
   })
 
   it('ignores unknown op', () => {
