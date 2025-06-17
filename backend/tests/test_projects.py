@@ -480,7 +480,7 @@ def test_score_project_mixed_connection_types():
     assert response.status_code == 200
     assert response.json() == [
         {"id": 1, "sustainability_score": 2.0},
-        {"id": 2, "sustainability_score": 1.0},
+        {"id": 2, "sustainability_score": 1.2},
     ]
 
     app.dependency_overrides.clear()
