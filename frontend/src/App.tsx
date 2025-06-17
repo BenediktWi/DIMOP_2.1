@@ -140,7 +140,7 @@ export default function App() {
     setShowNodeForm(true)
   }
 
-  const handleNodeSubmit = (e: React.FormEvent) => {
+  const handleNodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (newNode.material_id === '') {
       window.alert('Please select a material')
@@ -160,35 +160,43 @@ export default function App() {
     if (newNode.atomic) {
       payload.weight = Number(newNode.weight)
     }
-    fetch('/nodes/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-      .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then(node =>
-        setState(prev =>
-          applyWsMessage(prev, {
-            op: 'create_node',
-            node,
-          })
-        )
-      )
-      .catch(err => console.error(err))
-      .finally(() => {
-        setShowNodeForm(false)
-        setNewNode({
-          name: '',
-          level: 0,
-          parent_id: '',
-          atomic: false,
-          weight: 1,
-          reusable: false,
-          recyclable: false,
-          connection_type: 0,
-          material_id: '',
-        })
+    try {
+      const response = await fetch('/nodes/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       })
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError('Node creation failed: referenced item not found. Check your selections.')
+          return
+        }
+        setError(`Failed to create node (HTTP ${response.status})`)
+        return
+      }
+      const node = await response.json()
+      setState(prev =>
+        applyWsMessage(prev, {
+          op: 'create_node',
+          node,
+        })
+      )
+    } catch {
+      setError('Failed to create node')
+    } finally {
+      setShowNodeForm(false)
+      setNewNode({
+        name: '',
+        level: 0,
+        parent_id: '',
+        atomic: false,
+        weight: 1,
+        reusable: false,
+        recyclable: false,
+        connection_type: 0,
+        material_id: '',
+      })
+    }
   }
 
   const handleConnect = (connection: any) => {
