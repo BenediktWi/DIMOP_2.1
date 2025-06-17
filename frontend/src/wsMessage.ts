@@ -1,7 +1,32 @@
+export interface Component {
+  id: number
+  name?: string
+  level?: number
+  parent_id?: number | null
+  atomic?: boolean
+  weight?: number
+  reusable?: boolean
+  connection_type?: string
+  material_id?: number
+  position?: { x: number; y: number }
+}
+
+export interface Material {
+  id: number
+  name?: string
+  weight?: number
+}
+
+export interface Edge {
+  id: number
+  source: number
+  target: number
+}
+
 export interface GraphState {
-  nodes: any[]
-  edges: any[]
-  materials: any[]
+  nodes: Component[]
+  edges: Edge[]
+  materials: Material[]
 }
 
 export interface WsMessage {
