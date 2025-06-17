@@ -17,6 +17,7 @@ export interface Material {
   name?: string
   weight?: number
   co2_value?: number
+  hardness?: number
 }
 
 export interface Edge {

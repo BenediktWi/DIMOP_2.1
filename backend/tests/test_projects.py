@@ -40,6 +40,20 @@ class FakeSessionNode:
         return FakeResult({"id": 1})
 
 
+class FakeSessionMaterial:
+    """Write session for material creation."""
+    async def run(self, query, **params):
+        return FakeResult(
+            {
+                "id": 1,
+                "name": params["name"],
+                "weight": params["weight"],
+                "co2_value": params["co2_value"],
+                "hardness": params["hardness"],
+            }
+        )
+
+
 class FakeSessionGraph:
     """
     Read-only session that returns:
@@ -162,6 +176,10 @@ async def override_get_session_graph_cycle():
 
 async def override_get_session_node():
     yield FakeSessionNode()
+
+
+async def override_get_session_material():
+    yield FakeSessionMaterial()
 
 
 # ---------------------------------------------------------------------------
@@ -327,4 +345,22 @@ def test_atomic_weight_required():
         },
     )
     assert response.status_code == 422
+    app.dependency_overrides.clear()
+
+
+def test_create_material():
+    app.dependency_overrides[get_write_session] = override_get_session_material
+    client = TestClient(app)
+    response = client.post(
+        "/materials/",
+        json={"name": "Steel", "weight": 7.8, "co2_value": 1.0, "hardness": 10.0},
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": 1,
+        "name": "Steel",
+        "weight": 7.8,
+        "co2_value": 1.0,
+        "hardness": 10.0,
+    }
     app.dependency_overrides.clear()

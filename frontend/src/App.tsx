@@ -112,10 +112,16 @@ export default function App() {
     if (!name) return
     const weight = parseFloat(window.prompt('Weight of material', '1') || '1')
     const co2 = parseFloat(window.prompt('CO2 value', '1') || '1')
+    const hardnessStr = window.prompt('Hardness value', '1') || '1'
+    const hardness = parseFloat(hardnessStr)
+    if (Number.isNaN(hardness)) {
+      window.alert('Hardness must be a number')
+      return
+    }
     fetch('/materials/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, weight, co2_value: co2 }),
+      body: JSON.stringify({ name, weight, co2_value: co2, hardness }),
     })
       .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
       .then(material =>
