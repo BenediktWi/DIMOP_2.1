@@ -13,6 +13,32 @@ async def create_node(
     node: NodeCreate,
     session: AsyncSession = Depends(get_write_session),
 ):
+    """Create a node within a project using the given material."""
+
+    # verify project exists
+    try:
+        res_proj = await session.run(
+            "MATCH (p:Project) WHERE id(p)=$pid RETURN id(p) AS id",
+            pid=node.project_id,
+        )
+    except exceptions.ServiceUnavailable:
+        raise HTTPException(status_code=503, detail="Neo4j unavailable")
+    proj_record = await res_proj.single()
+    if not proj_record:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # verify material exists
+    try:
+        res_mat = await session.run(
+            "MATCH (m:Material) WHERE id(m)=$mid RETURN id(m) AS id",
+            mid=node.material_id,
+        )
+    except exceptions.ServiceUnavailable:
+        raise HTTPException(status_code=503, detail="Neo4j unavailable")
+    mat_record = await res_mat.single()
+    if not mat_record:
+        raise HTTPException(status_code=404, detail="Material not found")
+
     query = (
         "MATCH (p:Project) WHERE id(p)=$pid "
         "MATCH (m:Material) WHERE id(m)=$mid "
@@ -39,7 +65,7 @@ async def create_node(
 
     record = await result.single()
     if not record:
-        raise HTTPException(status_code=404, detail="Resource not found")
+        raise HTTPException(status_code=500, detail="Failed to create node")
 
     node_data = {
         "id":          record["id"],

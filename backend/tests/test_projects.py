@@ -26,6 +26,30 @@ class FakeSessionNode:
         return FakeResult({"id": 1})
 
 
+class FakeSessionMissingProject:
+    def __init__(self):
+        self.calls = 0
+
+    async def run(self, query, **params):
+        self.calls += 1
+        if self.calls == 1:
+            return FakeResult(None)
+        raise AssertionError("Unexpected query")
+
+
+class FakeSessionMissingMaterial:
+    def __init__(self):
+        self.calls = 0
+
+    async def run(self, query, **params):
+        self.calls += 1
+        if self.calls == 1:
+            return FakeResult({"id": 1})
+        if self.calls == 2:
+            return FakeResult(None)
+        raise AssertionError("Unexpected query")
+
+
 class FakeResultList:
     def __init__(self, data_list):
         self._data_list = data_list
@@ -87,6 +111,14 @@ async def override_get_session_graph():
 
 async def override_get_session_node():
     yield FakeSessionNode()
+
+
+async def override_get_session_missing_project():
+    yield FakeSessionMissingProject()
+
+
+async def override_get_session_missing_material():
+    yield FakeSessionMissingMaterial()
 
 
 def test_create_project():
@@ -168,4 +200,50 @@ def test_create_node():
         "weight": 1.0,
         "recyclable": True,
     }
+    app.dependency_overrides.clear()
+
+
+def test_create_node_missing_project():
+    app.dependency_overrides[get_write_session] = override_get_session_missing_project
+    client = TestClient(app)
+    response = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 2,
+            "name": "Child",
+            "parent_id": None,
+            "atomic": True,
+            "reusable": False,
+            "connection_type": "bolt",
+            "level": 0,
+            "weight": 1.0,
+            "recyclable": True,
+        },
+    )
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Project not found"}
+    app.dependency_overrides.clear()
+
+
+def test_create_node_missing_material():
+    app.dependency_overrides[get_write_session] = override_get_session_missing_material
+    client = TestClient(app)
+    response = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 2,
+            "name": "Child",
+            "parent_id": None,
+            "atomic": True,
+            "reusable": False,
+            "connection_type": "bolt",
+            "level": 0,
+            "weight": 1.0,
+            "recyclable": True,
+        },
+    )
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Material not found"}
     app.dependency_overrides.clear()
