@@ -15,6 +15,7 @@ export default function App() {
     level: 0,
     parent_id: '',
     atomic: false,
+    reusable: false,
     weight: 1,
     recyclable: false,
     connection_type: '',
@@ -137,6 +138,11 @@ export default function App() {
     const payload = {
       project_id: Number(projectId),
       material_id: Number(newNode.material_id || 0),
+      name: newNode.name,
+      parent_id: newNode.parent_id === '' ? null : Number(newNode.parent_id),
+      atomic: newNode.atomic,
+      reusable: newNode.reusable,
+      connection_type: newNode.connection_type || null,
       level: Number(newNode.level),
       weight: Number(newNode.weight),
       recyclable: newNode.recyclable,
@@ -163,6 +169,7 @@ export default function App() {
           level: 0,
           parent_id: '',
           atomic: false,
+          reusable: false,
           weight: 1,
           recyclable: false,
           connection_type: '',
@@ -214,6 +221,14 @@ export default function App() {
                 onChange={e => setNewNode({ ...newNode, atomic: e.target.checked })}
               />
               Atomic
+            </label>
+            <label className="block">
+              <input
+                type="checkbox"
+                checked={newNode.reusable}
+                onChange={e => setNewNode({ ...newNode, reusable: e.target.checked })}
+              />
+              Reusable
             </label>
             <input
               type="number"
