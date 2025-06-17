@@ -55,6 +55,8 @@ async def get_graph(
     q_nodes = (
         "MATCH (p:Project)<-[:PART_OF]-(n:Node)-[:USES]->(m:Material) "
         "WHERE id(p)=$pid RETURN id(n) AS id, id(m) AS material_id, "
+        "n.name AS name, n.parent_id AS parent_id, n.atomic AS atomic, "
+        "n.reusable AS reusable, n.connection_type AS connection_type, "
         "n.level AS level, n.weight AS weight, n.recyclable AS recyclable"
     )
     try:
@@ -80,4 +82,20 @@ async def get_graph(
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
     materials = await res_m.data()
+    node_map = {n["id"]: n for n in nodes}
+
+    def calc_weight(nid: int) -> float:
+        node = node_map[nid]
+        if node.get("atomic"):
+            return node.get("weight", 0)
+        total = 0.0
+        for ch in nodes:
+            if ch.get("parent_id") == nid:
+                total += calc_weight(ch["id"])
+        node["weight"] = total
+        return total
+
+    for n in nodes:
+        if not n.get("atomic"):
+            calc_weight(n["id"])
     return {"nodes": nodes, "edges": edges, "materials": materials}

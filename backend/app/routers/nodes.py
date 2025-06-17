@@ -16,7 +16,8 @@ async def create_node(
     query = (
         "MATCH (p:Project) WHERE id(p)=$pid "
         "MATCH (m:Material) WHERE id(m)=$mid "
-        "CREATE (n:Node {level: $level, weight: $weight, recyclable: $recyclable})-[:USES]->(m), "
+        "CREATE (n:Node {name: $name, parent_id: $parent_id, atomic: $atomic, reusable: $reusable, "
+        "connection_type: $connection_type, level: $level, weight: $weight, recyclable: $recyclable})-[:USES]->(m), "
         "(n)-[:PART_OF]->(p) RETURN id(n) AS id"
     )
     try:
@@ -24,6 +25,11 @@ async def create_node(
             query,
             pid=node.project_id,
             mid=node.material_id,
+            name=node.name,
+            parent_id=node.parent_id,
+            atomic=node.atomic,
+            reusable=node.reusable,
+            connection_type=node.connection_type,
             level=node.level,
             weight=node.weight,
             recyclable=node.recyclable,
@@ -39,6 +45,11 @@ async def create_node(
         "id":          record["id"],
         "project_id":  node.project_id,
         "material_id": node.material_id,
+        "name":        node.name,
+        "parent_id":   node.parent_id,
+        "atomic":      node.atomic,
+        "reusable":    node.reusable,
+        "connection_type": node.connection_type,
         "level":       node.level,
         "weight":      node.weight,
         "recyclable":  node.recyclable,
@@ -57,6 +68,8 @@ async def get_node(
         "MATCH (n:Node)-[:USES]->(m:Material) WHERE id(n)=$id "
         "MATCH (n)-[:PART_OF]->(p:Project) "
         "RETURN id(n) AS id, id(p) AS project_id, id(m) AS material_id, "
+        "n.name AS name, n.parent_id AS parent_id, n.atomic AS atomic, "
+        "n.reusable AS reusable, n.connection_type AS connection_type, "
         "n.level AS level, n.weight AS weight, n.recyclable AS recyclable"
     )
     try:
