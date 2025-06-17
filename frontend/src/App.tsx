@@ -142,6 +142,10 @@ export default function App() {
 
   const handleNodeSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    if (newNode.material_id === '') {
+      window.alert('Please select a material')
+      return
+    }
     const payload: any = {
       project_id: Number(projectId),
       name: newNode.name,
@@ -151,7 +155,7 @@ export default function App() {
       reusable: newNode.reusable,
       recyclable: newNode.recyclable,
       connection_type: newNode.connection_type,
-      material_id: Number(newNode.material_id || 0),
+      material_id: Number(newNode.material_id),
     }
     if (newNode.atomic) {
       payload.weight = Number(newNode.weight)
@@ -265,12 +269,15 @@ export default function App() {
                 <option key={n} value={n}>{n}</option>
               ))}
             </select>
-            <input
-              type="number"
-              placeholder="Material ID"
+            <select
               value={newNode.material_id}
               onChange={e => setNewNode({ ...newNode, material_id: e.target.value })}
-            />
+            >
+              <option value="">Select material</option>
+              {state.materials.map(m => (
+                <option key={m.id} value={m.id}>{m.id}{m.name ? ` - ${m.name}` : ''}</option>
+              ))}
+            </select>
             <div className="space-x-2">
               <button type="submit">Create</button>
               <button type="button" onClick={() => setShowNodeForm(false)}>Cancel</button>
