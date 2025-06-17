@@ -403,6 +403,30 @@ def test_create_node_non_atomic():
     app.dependency_overrides.clear()
 
 
+def test_non_atomic_weight_disallowed():
+    app.dependency_overrides[get_write_session] = override_get_session_node
+    client = TestClient(app)
+
+    response = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 2,
+            "name": "Group",
+            "parent_id": None,
+            "atomic": False,
+            "reusable": False,
+            "connection_type": 1,
+            "level": 0,
+            "weight": 1.0,
+            "recyclable": True,
+        },
+    )
+    assert response.status_code == 422
+
+    app.dependency_overrides.clear()
+
+
 def test_atomic_weight_required():
     app.dependency_overrides[get_write_session] = override_get_session_node
     client = TestClient(app)

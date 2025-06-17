@@ -46,12 +46,11 @@ class NodeBase(BaseModel):
 
     @model_validator(mode="after")
     def _check_weight_atomic(self) -> "NodeBase":
-        """
-        Atomic nodes must have an explicit weight;
-        group nodes get their weight calculated later.
-        """
+        """Validate weight in relation to ``atomic`` flag."""
         if self.atomic and self.weight is None:
             raise ValueError("weight must be provided when node is atomic")
+        if not self.atomic and self.weight is not None:
+            raise ValueError("weight must not be provided when node is not atomic")
         return self
 
     @model_validator(mode="after")
