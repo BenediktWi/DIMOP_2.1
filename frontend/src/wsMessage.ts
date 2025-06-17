@@ -24,14 +24,25 @@ export function applyWsMessage(state: GraphState, msg: WsMessage): GraphState {
         return { ...state, nodes: state.nodes.filter(n => n.id !== msg.id) }
       }
       return state
-    case 'create_relation':
-      if ('id' in msg && 'source' in msg && 'target' in msg) {
-        return { ...state, edges: [...state.edges, { id: msg.id, source: msg.source, target: msg.target }] }
-      }
+      case 'create_relation':
+        if ('id' in msg && 'source' in msg && 'target' in msg) {
+          return {
+            ...state,
+            edges: [
+              ...state.edges,
+              {
+                id: Number(msg.id),
+                source: Number(msg.source),
+                target: Number(msg.target),
+              },
+            ],
+          }
+        }
       return state
     case 'delete_relation':
       if ('id' in msg) {
-        return { ...state, edges: state.edges.filter(e => e.id !== msg.id) }
+        const id = Number(msg.id)
+        return { ...state, edges: state.edges.filter(e => e.id !== id) }
       }
       return state
     case 'create_material':
