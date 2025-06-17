@@ -61,8 +61,8 @@ class FakeSessionMaterial:
 class FakeSessionScore:
     """
     Session for scoring projects.
-    Uses integer enums for `ctype` (0-5); the scoring endpoint does not care
-    about the exact value as long as it is consistent.
+    Uses integer enums for `ctype` (0-5); the scoring endpoint only needs
+    consistent numeric values.
     """
 
     async def run(self, query, **params):
@@ -90,7 +90,7 @@ class FakeSessionScore:
 
 class FakeSessionGraph:
     """
-    Read-only session that returns
+    Read-only session that returns:
       • call 1 → nodes
       • call 2 → edges
       • call 3 → materials
@@ -113,7 +113,7 @@ class FakeSessionGraph:
                         "reusable": False,
                         "connection_type": 1,
                         "level": 0,
-                        "weight": 1.0,
+                        "weight": 1.0,  # matches test expectation
                         "recyclable": True,
                     },
                     {
@@ -147,7 +147,7 @@ class FakeSessionGraph:
 
 
 class FakeSessionGraphCycle:
-    """Same pattern as above, but returns a graph that contains a cycle."""
+    """Same pattern as above, but returns a graph containing a cycle."""
 
     def __init__(self):
         self._calls = 0
@@ -183,7 +183,7 @@ class FakeSessionGraphCycle:
                     },
                 ]
             )
-        if self._calls == 2:  # edges (cycle present)
+        if self._calls == 2:  # edges (cycle)
             return FakeResultList(
                 [
                     {"id": 10, "source": 1, "target": 2},
@@ -358,7 +358,7 @@ def test_create_node_non_atomic():
             "parent_id": None,
             "atomic": False,
             "reusable": False,
-            "connection_type": "bolt",
+            "connection_type": 1,
             "level": 0,
             "recyclable": True,
         },
@@ -372,7 +372,7 @@ def test_create_node_non_atomic():
         "parent_id": None,
         "atomic": False,
         "reusable": False,
-        "connection_type": "bolt",
+        "connection_type": 1,
         "level": 0,
         "weight": None,
         "recyclable": True,
@@ -394,7 +394,7 @@ def test_atomic_weight_required():
             "parent_id": None,
             "atomic": True,
             "reusable": False,
-            "connection_type": "bolt",
+            "connection_type": 1,
             "level": 0,
             "recyclable": True,
         },

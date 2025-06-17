@@ -39,7 +39,7 @@ class NodeBase(BaseModel):
     # allow both numeric (enum) and string connection-type identifiers
     connection_type: int | str | None = None
     level: int
-    weight: float | None = None
+    weight: float | None = Field(None, gt=0)
     recyclable: bool
 
     # ---- Validators -------------------------------------------------------
