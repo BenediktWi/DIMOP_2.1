@@ -106,6 +106,23 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setState, projectId])
 
+  /**
+   * 3️⃣  Populate node & level selectors whenever the creation form opens
+   */
+  useEffect(() => {
+    if (!showNodeForm) return
+
+    fetch(`/projects/${projectId}/graph`)
+      .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(data => {
+        setAvailableNodes(data.nodes)
+        const max = Math.max(0, ...data.nodes.map((n: any) => n.level ?? 0))
+        const lvls = Array.from({ length: max + 2 }, (_, i) => i)
+        setAvailableLevels(lvls)
+      })
+      .catch(err => console.error(err))
+  }, [showNodeForm, projectId])
+
   if (error) {
     return <div className="p-4 text-red-600">{error}</div>
   }
@@ -142,25 +159,17 @@ export default function App() {
     setShowNodeForm(true)
   }
 
-  useEffect(() => {
-    if (!showNodeForm) return
-    fetch(`/projects/${projectId}/graph`)
-      .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then(data => {
-        setAvailableNodes(data.nodes)
-        const max = Math.max(0, ...data.nodes.map((n: any) => n.level ?? 0))
-        const lvls = Array.from({ length: max + 2 }, (_, i) => i)
-        setAvailableLevels(lvls)
-      })
-      .catch(err => console.error(err))
-  }, [showNodeForm, projectId])
-
-  const handleNodeSubmit = (e: React.FormEvent) => {
+  /**
+   * 4️⃣  Handle node creation
+   */
+  const handleNodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     if (newNode.material_id === '') {
       window.alert('Please select a material')
       return
     }
+
     const payload: any = {
       project_id: Number(projectId),
       name: newNode.name,
@@ -172,40 +181,55 @@ export default function App() {
       connection_type: newNode.connection_type,
       material_id: Number(newNode.material_id),
     }
+
     if (newNode.atomic) {
       payload.weight = Number(newNode.weight)
     }
-    fetch('/nodes/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-      .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then(node =>
-        setState(prev =>
-          applyWsMessage(prev, {
-            op: 'create_node',
-            node,
-          })
-        )
-      )
-      .catch(err => console.error(err))
-      .finally(() => {
-        setShowNodeForm(false)
-        setNewNode({
-          name: '',
-          level: 0,
-          parent_id: '',
-          atomic: false,
-          weight: 1,
-          reusable: false,
-          recyclable: false,
-          connection_type: 0,
-          material_id: '',
-        })
-        setAvailableNodes([])
-        setAvailableLevels([])
+
+    try {
+      const response = await fetch('/nodes/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       })
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          setError('Node creation failed: referenced item not found. Check your selections.')
+          return
+        }
+        setError(`Failed to create node (HTTP ${response.status})`)
+        return
+      }
+
+      const node = await response.json()
+
+      setState(prev =>
+        applyWsMessage(prev, {
+          op: 'create_node',
+          node,
+        })
+      )
+    } catch {
+      setError('Failed to create node')
+    } finally {
+      // always close the form & reset state
+      setShowNodeForm(false)
+      setNewNode({
+        name: '',
+        level: 0,
+        parent_id: '',
+        atomic: false,
+        weight: 1,
+        reusable: false,
+        recyclable: false,
+        connection_type: 0,
+        material_id: '',
+      })
+      // clear cached selectors so they refresh next time
+      setAvailableNodes([])
+      setAvailableLevels([])
+    }
   }
 
   const handleParentChange = (pid: string) => {
