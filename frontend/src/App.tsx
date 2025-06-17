@@ -111,10 +111,11 @@ export default function App() {
     const name = window.prompt('Name of material', '')
     if (!name) return
     const weight = parseFloat(window.prompt('Weight of material', '1') || '1')
+    const co2 = parseFloat(window.prompt('CO2 value', '1') || '1')
     fetch('/materials/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, weight }),
+      body: JSON.stringify({ name, weight, co2_value: co2 }),
     })
       .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
       .then(material =>

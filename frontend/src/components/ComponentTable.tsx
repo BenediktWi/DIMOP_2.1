@@ -19,6 +19,7 @@ export default function ComponentTable({ components }: Props) {
     columnHelper.accessor('level', { header: 'Level' }),
     columnHelper.accessor('weight', { header: 'Weight' }),
     columnHelper.accessor('material_id', { header: 'Material' }),
+    columnHelper.accessor('sustainability_score', { header: 'Sustainability' }),
   ]
 
   const table = useReactTable({
