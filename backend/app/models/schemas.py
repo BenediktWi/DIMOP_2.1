@@ -22,6 +22,11 @@ class Material(MaterialBase):
 class NodeBase(BaseModel):
     project_id: int
     material_id: int
+    name: str
+    parent_id: int | None = None
+    atomic: bool
+    reusable: bool
+    connection_type: str | None = None
     level: int
     weight: float
     recyclable: bool
