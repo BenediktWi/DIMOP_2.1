@@ -48,6 +48,9 @@ export function applyWsMessage(state: GraphState, msg: WsMessage): GraphState {
             y: Math.random() * 250,
           },
         }
+        if (n.atomic === false) {
+          delete (n as any).weight
+        }
         return { ...state, nodes: [...state.nodes, n] }
       }
       if ('id' in msg) {

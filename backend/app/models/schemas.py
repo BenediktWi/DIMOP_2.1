@@ -58,12 +58,11 @@ class NodeBase(BaseModel):
 
     @model_validator(mode="after")
     def _check_weight_atomic(self) -> "NodeBase":
-        """
-        Atomic nodes must have an explicit weight;
-        group nodes get their weight calculated later.
-        """
+        """Validate weight in relation to ``atomic`` flag."""
         if self.atomic and self.weight is None:
             raise ValueError("weight must be provided when node is atomic")
+        if not self.atomic and self.weight is not None:
+            raise ValueError("weight must not be provided when node is not atomic")
         return self
 
     @model_validator(mode="after")
@@ -73,6 +72,15 @@ class NodeBase(BaseModel):
             return self
         if not isinstance(self.connection_type, str):
             raise ValueError("connection_type must be ConnectionType, str, or None")
+        return self
+
+    @model_validator(mode="after")
+    def _validate_parent_id(self) -> "NodeBase":
+        """Validate combination of ``parent_id`` and ``level``."""
+        if self.level == 0 and self.parent_id is not None:
+            raise ValueError("parent_id must be None when level is 0")
+        if self.level > 0 and self.parent_id is None:
+            raise ValueError("parent_id must be provided when level > 0")
         return self
 
 
