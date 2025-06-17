@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class MaterialBase(BaseModel):
@@ -30,8 +30,14 @@ class NodeBase(BaseModel):
     reusable: bool
     connection_type: int | None = Field(None, ge=0, le=5)
     level: int
-    weight: float
+    weight: float | None = None
     recyclable: bool
+
+    @model_validator(mode="after")
+    def _check_weight_atomic(self) -> "NodeBase":
+        if self.atomic and self.weight is None:
+            raise ValueError("weight must be provided when node is atomic")
+        return self
 
 
 class NodeCreate(NodeBase):
