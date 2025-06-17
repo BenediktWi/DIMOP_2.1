@@ -11,7 +11,8 @@ class MaterialBase(BaseModel):
     name: str = Field(..., example="Aluminum")
     weight: float = Field(..., gt=0)
     co2_value: float = Field(..., gt=0)
-    hardness: float = Field(..., gt=0)           # kept from Development_Nachhaltigkeit
+    hardness: float = Field(..., gt=0)  # retained from Development_Nachhaltigkeit
+
 
 class MaterialCreate(MaterialBase):
     pass
@@ -35,17 +36,35 @@ class NodeBase(BaseModel):
     parent_id: int | None = None
     atomic: bool
     reusable: bool
-    # allow both numeric and string connection type identifiers
+    # allow both numeric (enum) and string connection-type identifiers
     connection_type: int | str | None = None
     level: int
     weight: float | None = None
     recyclable: bool
 
+    # ---- Validators -------------------------------------------------------
+
     @model_validator(mode="after")
     def _check_weight_atomic(self) -> "NodeBase":
-        """If a node is atomic it must carry its own weight."""
+        """
+        Atomic nodes must have an explicit weight;
+        group nodes get their weight calculated later.
+        """
         if self.atomic and self.weight is None:
             raise ValueError("weight must be provided when node is atomic")
+        return self
+
+    @model_validator(mode="after")
+    def _validate_connection_type(self) -> "NodeBase":
+        """
+        When numeric, `connection_type` must be 0-5 (inclusive);
+        otherwise any string identifier is accepted.
+        """
+        if isinstance(self.connection_type, int):
+            if not 0 <= self.connection_type <= 5:
+                raise ValueError("connection_type numeric must be between 0 and 5")
+        elif self.connection_type is not None and not isinstance(self.connection_type, str):
+            raise ValueError("connection_type must be int, str, or None")
         return self
 
 
@@ -101,7 +120,7 @@ class Project(ProjectBase):
 
 
 # ---------------------------------------------------------------------------
-# Sustainability score tracking (from implement-sustainability-score-tracking)
+# Sustainability score tracking
 # ---------------------------------------------------------------------------
 
 class NodeScore(BaseModel):

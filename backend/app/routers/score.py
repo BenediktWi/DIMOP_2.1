@@ -23,7 +23,10 @@ async def score_project(
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
     records = await result.data()
 
-    def factor(ctype: str | None) -> float:
+    def factor(ctype: str | int | None) -> float:
+        mapping = {0: "screw", 1: "bolt", 2: "glue"}
+        if isinstance(ctype, int):
+            ctype = mapping.get(ctype)
         return {"screw": 0.8, "bolt": 1.0, "glue": 1.2}.get(ctype or "", 1.0)
 
     scores: list[NodeScore] = []
