@@ -287,7 +287,7 @@ def test_create_node_non_atomic():
             "parent_id": None,
             "atomic": False,
             "reusable": False,
-            "connection_type": "bolt",
+            "connection_type": 1,
             "level": 0,
             "recyclable": True,
         },
@@ -301,7 +301,7 @@ def test_create_node_non_atomic():
         "parent_id": None,
         "atomic": False,
         "reusable": False,
-        "connection_type": "bolt",
+        "connection_type": 1,
         "level": 0,
         "weight": None,
         "recyclable": True,
@@ -321,8 +321,52 @@ def test_atomic_weight_required():
             "parent_id": None,
             "atomic": True,
             "reusable": False,
-            "connection_type": "bolt",
+            "connection_type": 1,
             "level": 0,
+            "recyclable": True,
+        },
+    )
+    assert response.status_code == 422
+    app.dependency_overrides.clear()
+
+
+def test_negative_weight():
+    app.dependency_overrides[get_write_session] = override_get_session_node
+    client = TestClient(app)
+    response = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 2,
+            "name": "Child",
+            "parent_id": None,
+            "atomic": True,
+            "reusable": False,
+            "connection_type": 1,
+            "level": 0,
+            "weight": -1.0,
+            "recyclable": True,
+        },
+    )
+    assert response.status_code == 422
+    app.dependency_overrides.clear()
+
+
+def test_zero_weight():
+    app.dependency_overrides[get_write_session] = override_get_session_node
+    client = TestClient(app)
+    response = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 2,
+            "name": "Child",
+            "parent_id": None,
+            "atomic": True,
+            "reusable": False,
+            "connection_type": 1,
+            "level": 0,
+            "weight": 0,
             "recyclable": True,
         },
     )

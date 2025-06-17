@@ -37,7 +37,7 @@ class NodeBase(BaseModel):
     reusable: bool
     connection_type: int | None = Field(None, ge=0, le=5)
     level: int
-    weight: float | None = None
+    weight: float | None = Field(None, gt=0)
     recyclable: bool
 
     @model_validator(mode="after")
