@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react'
 import GraphCanvas from './components/GraphCanvas'
 import ComponentTable from './components/ComponentTable'
 import useUndoRedo from './components/useUndoRedo'
-import { applyWsMessage, GraphState, WsMessage } from './wsMessage'
+import { applyWsMessage, GraphState, WsMessage, Component } from './wsMessage'
 
 export default function App() {
   // local state & undo/redo stack
@@ -21,6 +21,8 @@ export default function App() {
     connection_type: 0,
     material_id: '' as string | number,
   })
+  const [availableNodes, setAvailableNodes] = useState<Component[]>([])
+  const [availableLevels, setAvailableLevels] = useState<number[]>([])
 
   // pick up ?project= query param once and remember in localStorage
   const [projectId] = useState(() => {
@@ -140,6 +142,19 @@ export default function App() {
     setShowNodeForm(true)
   }
 
+  useEffect(() => {
+    if (!showNodeForm) return
+    fetch(`/projects/${projectId}/graph`)
+      .then(r => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then(data => {
+        setAvailableNodes(data.nodes)
+        const max = Math.max(0, ...data.nodes.map((n: any) => n.level ?? 0))
+        const lvls = Array.from({ length: max + 2 }, (_, i) => i)
+        setAvailableLevels(lvls)
+      })
+      .catch(err => console.error(err))
+  }, [showNodeForm, projectId])
+
   const handleNodeSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (newNode.material_id === '') {
@@ -188,7 +203,19 @@ export default function App() {
           connection_type: 0,
           material_id: '',
         })
+        setAvailableNodes([])
+        setAvailableLevels([])
       })
+  }
+
+  const handleParentChange = (pid: string) => {
+    if (pid === '') {
+      setNewNode(prev => ({ ...prev, parent_id: '', level: 0 }))
+      return
+    }
+    const parent = availableNodes.find(n => String(n.id) === pid)
+    const lvl = parent ? (parent.level ?? 0) + 1 : 1
+    setNewNode(prev => ({ ...prev, parent_id: pid, level: lvl }))
   }
 
   const handleConnect = (connection: any) => {
@@ -215,18 +242,32 @@ export default function App() {
               value={newNode.name}
               onChange={e => setNewNode({ ...newNode, name: e.target.value })}
             />
-            <input
-              type="number"
-              placeholder="Level"
+            <select
               value={newNode.level}
-              onChange={e => setNewNode({ ...newNode, level: Number(e.target.value) })}
-            />
-            <input
-              type="number"
-              placeholder="Parent ID"
+              disabled={newNode.parent_id !== ''}
+              onChange={e => {
+                const lvl = Number(e.target.value)
+                setNewNode(prev => ({
+                  ...prev,
+                  level: lvl,
+                  parent_id: lvl === 0 ? '' : prev.parent_id,
+                }))
+              }}
+            >
+              {availableLevels.map(l => (
+                <option key={l} value={l}>{l}</option>
+              ))}
+            </select>
+            <select
               value={newNode.parent_id}
-              onChange={e => setNewNode({ ...newNode, parent_id: e.target.value })}
-            />
+              disabled={newNode.level === 0}
+              onChange={e => handleParentChange(e.target.value)}
+            >
+              <option value="">Select parent</option>
+              {availableNodes.map(n => (
+                <option key={n.id} value={n.id}>{n.id}{n.name ? ` - ${n.name}` : ''}</option>
+              ))}
+            </select>
             <label className="block">
               <input
                 type="checkbox"
