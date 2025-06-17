@@ -43,6 +43,20 @@ class FakeSessionNode:
         return FakeResult({"id": 1})
 
 
+class FakeSessionNodeCheckParent:
+    """Session for node creation with parent existence check."""
+
+    def __init__(self, parent_exists: bool):
+        self.parent_exists = parent_exists
+        self.calls = 0
+
+    async def run(self, query, **params):
+        self.calls += 1
+        if self.calls == 1:
+            return FakeResult({"id": params.get("nid")}) if self.parent_exists else FakeResult(None)
+        return FakeResult({"id": 1})
+
+
 class FakeSessionMaterial:
     """Write session for material creation."""
 
@@ -223,6 +237,14 @@ async def override_get_session_graph_cycle():
 
 async def override_get_session_node():
     yield FakeSessionNode()
+
+
+async def override_get_session_node_parent_missing():
+    yield FakeSessionNodeCheckParent(False)
+
+
+async def override_get_session_node_parent_exists():
+    yield FakeSessionNodeCheckParent(True)
 
 
 async def override_get_session_material():
@@ -448,6 +470,77 @@ def test_zero_weight():
         },
     )
     assert response.status_code == 422
+
+    app.dependency_overrides.clear()
+
+
+def test_parent_id_none_on_level_zero():
+    app.dependency_overrides[get_write_session] = override_get_session_node
+    client = TestClient(app)
+
+    response = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 2,
+            "name": "Invalid",
+            "parent_id": 99,
+            "atomic": True,
+            "reusable": False,
+            "connection_type": 1,
+            "level": 0,
+            "weight": 1.0,
+            "recyclable": True,
+        },
+    )
+    assert response.status_code == 422
+
+    app.dependency_overrides.clear()
+
+
+def test_parent_id_required_for_non_root():
+    app.dependency_overrides[get_write_session] = override_get_session_node
+    client = TestClient(app)
+
+    response = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 2,
+            "name": "Invalid",
+            "parent_id": None,
+            "atomic": True,
+            "reusable": False,
+            "connection_type": 1,
+            "level": 1,
+            "weight": 1.0,
+            "recyclable": True,
+        },
+    )
+    assert response.status_code == 422
+
+    app.dependency_overrides.clear()
+
+
+def test_parent_node_must_exist():
+    app.dependency_overrides[get_write_session] = override_get_session_node_parent_missing
+    client = TestClient(app)
+
+    response = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 2,
+            "name": "Child",
+            "parent_id": 5,
+            "atomic": False,
+            "reusable": False,
+            "connection_type": 1,
+            "level": 1,
+            "recyclable": True,
+        },
+    )
+    assert response.status_code == 404
 
     app.dependency_overrides.clear()
 

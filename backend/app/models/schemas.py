@@ -67,6 +67,15 @@ class NodeBase(BaseModel):
             raise ValueError("connection_type must be int, str, or None")
         return self
 
+    @model_validator(mode="after")
+    def _validate_parent_id(self) -> "NodeBase":
+        """Validate combination of ``parent_id`` and ``level``."""
+        if self.level == 0 and self.parent_id is not None:
+            raise ValueError("parent_id must be None when level is 0")
+        if self.level > 0 and self.parent_id is None:
+            raise ValueError("parent_id must be provided when level > 0")
+        return self
+
 
 class NodeCreate(NodeBase):
     pass

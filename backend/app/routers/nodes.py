@@ -13,6 +13,20 @@ async def create_node(
     node: NodeCreate,
     session: AsyncSession = Depends(get_write_session),
 ):
+    if node.parent_id is not None:
+        try:
+            check_result = await session.run(
+                "MATCH (p:Project)<-[:PART_OF]-(n:Node) "
+                "WHERE id(p)=$pid AND id(n)=$nid RETURN id(n) AS id",
+                pid=node.project_id,
+                nid=node.parent_id,
+            )
+        except exceptions.ServiceUnavailable:
+            raise HTTPException(status_code=503, detail="Neo4j unavailable")
+        parent_rec = await check_result.single()
+        if not parent_rec:
+            raise HTTPException(status_code=404, detail="Parent node not found")
+
     props = [
         "name: $name",
         "parent_id: $parent_id",
