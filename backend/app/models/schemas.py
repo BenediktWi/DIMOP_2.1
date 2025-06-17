@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class MaterialBase(BaseModel):
@@ -23,10 +23,17 @@ class NodeBase(BaseModel):
     project_id: int
     material_id: int
     level: int
+    parent_id: int | None = None
 
 
 class NodeCreate(NodeBase):
-    pass
+    @model_validator(mode="after")
+    def check_parent_id(cls, values: "NodeCreate") -> "NodeCreate":
+        if values.level == 0 and values.parent_id is not None:
+            raise ValueError("level 0 nodes cannot have a parent")
+        if values.level > 0 and values.parent_id is None:
+            raise ValueError("non-root nodes must define parent_id")
+        return values
 
 
 class Node(NodeBase):
