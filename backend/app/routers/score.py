@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from neo4j import AsyncSession, exceptions
 
 from ..database import get_write_session
-from ..models.schemas import NodeScore
+from ..models.schemas import NodeScore, ConnectionType
 
 router = APIRouter(tags=["score"])
 
@@ -23,11 +23,24 @@ async def score_project(
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
     records = await result.data()
 
-    def factor(ctype: str | int | None) -> float:
-        mapping = {0: "screw", 1: "bolt", 2: "glue"}
-        if isinstance(ctype, int):
-            ctype = mapping.get(ctype)
-        return {"screw": 0.8, "bolt": 1.0, "glue": 1.2}.get(ctype or "", 1.0)
+    factor_map = {
+        ConnectionType.SCREW: 0.8,
+        ConnectionType.BOLT: 1.0,
+        ConnectionType.GLUE: 1.2,
+    }
+
+    def factor(ctype: str | int | ConnectionType | None) -> float:
+        if isinstance(ctype, str):
+            try:
+                ctype = ConnectionType[ctype.upper()]
+            except KeyError:
+                return 1.0
+        else:
+            try:
+                ctype = ConnectionType(ctype)
+            except Exception:
+                return 1.0
+        return factor_map.get(ctype, 1.0)
 
     scores: list[NodeScore] = []
     for rec in records:

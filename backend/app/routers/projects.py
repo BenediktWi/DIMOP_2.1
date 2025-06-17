@@ -3,7 +3,7 @@ from neo4j import AsyncSession, exceptions
 
 from .websocket import broadcast
 from ..database import get_session, get_write_session
-from ..models.schemas import Project, ProjectCreate
+from ..models.schemas import Project, ProjectCreate, ConnectionType
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -89,6 +89,13 @@ async def get_graph(
     except exceptions.ServiceUnavailable:
         raise HTTPException(status_code=503, detail="Neo4j unavailable")
     nodes = await result.data()
+    for n in nodes:
+        cval = n.get("connection_type")
+        if isinstance(cval, int):
+            try:
+                n["connection_type"] = ConnectionType(cval).name
+            except ValueError:
+                n["connection_type"] = str(cval)
 
     # 2) Edges
     q_edges = (

@@ -3,7 +3,7 @@ from neo4j import AsyncSession, exceptions
 
 from .websocket import broadcast
 from ..database import get_session, get_write_session
-from ..models.schemas import Node, NodeCreate
+from ..models.schemas import Node, NodeCreate, ConnectionType
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
 
@@ -44,6 +44,17 @@ async def create_node(
         f"CREATE (n:Node {{{', '.join(props)}}})-[:USES]->(m), "
         "(n)-[:PART_OF]->(p) RETURN id(n) AS id"
     )
+    ctype_db = node.connection_type
+    if isinstance(ctype_db, ConnectionType):
+        ctype_db_val = int(ctype_db)
+        ctype_resp = ctype_db.name
+    elif isinstance(ctype_db, str) and ctype_db.upper() in ConnectionType.__members__:
+        ctype_db_val = int(ConnectionType[ctype_db.upper()])
+        ctype_resp = ctype_db.upper()
+    else:
+        ctype_db_val = ctype_db
+        ctype_resp = ctype_db
+
     try:
         result = await session.run(
             query,
@@ -53,7 +64,7 @@ async def create_node(
             parent_id=node.parent_id,
             atomic=node.atomic,
             reusable=node.reusable,
-            connection_type=node.connection_type,
+            connection_type=ctype_db_val,
             level=node.level,
             **({"weight": node.weight} if node.atomic else {}),
             recyclable=node.recyclable,
@@ -73,7 +84,7 @@ async def create_node(
         "parent_id":   node.parent_id,
         "atomic":      node.atomic,
         "reusable":    node.reusable,
-        "connection_type": node.connection_type,
+        "connection_type": ctype_resp,
         "level":       node.level,
         "weight":      node.weight if node.atomic else None,
         "recyclable":  node.recyclable,
@@ -103,7 +114,14 @@ async def get_node(
     record = await result.single()
     if not record:
         raise HTTPException(status_code=404, detail="Node not found")
-    return Node(**record.data())
+    data = record.data()
+    ctype_val = data.get("connection_type")
+    if isinstance(ctype_val, int):
+        try:
+            data["connection_type"] = ConnectionType(ctype_val).name
+        except ValueError:
+            data["connection_type"] = str(ctype_val)
+    return Node(**data)
 
 
 @router.delete("/{node_id}")
