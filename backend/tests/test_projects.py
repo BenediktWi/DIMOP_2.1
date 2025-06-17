@@ -43,14 +43,29 @@ class FakeSessionNode:
         return FakeResult({"id": 1})
 
 
+class FakeSessionMaterial:
+    """Write session for material creation."""
+
+    async def run(self, query, **params):
+        return FakeResult(
+            {
+                "id": 1,
+                "name": params["name"],
+                "weight": params["weight"],
+                "co2_value": params["co2_value"],
+                "hardness": params["hardness"],
+            }
+        )
+
+
 class FakeSessionScore:
     """
     Session for scoring projects.
-    `ctype` is an **integer enum** everywhere now.
+    Uses integer enums for `ctype` (0-5); the scoring endpoint only needs
+    consistent numeric values.
     """
 
     async def run(self, query, **params):
-        # The scorer only calls once for node data, otherwise it discards the result.
         if "RETURN id(n) AS nid" in query:
             return FakeResultList(
                 [
@@ -58,14 +73,14 @@ class FakeSessionScore:
                         "nid": 1,
                         "co2": 2.0,
                         "weight": 1.0,
-                        "ctype": 1,     # glued, welded… (integer enum)
+                        "ctype": 1,
                         "reusable": False,
                     },
                     {
                         "nid": 2,
                         "co2": 1.0,
                         "weight": 2.0,
-                        "ctype": 2,     # bolted, clipped… (integer enum)
+                        "ctype": 2,
                         "reusable": True,
                     },
                 ]
@@ -86,7 +101,7 @@ class FakeSessionGraph:
 
     async def run(self, query, **params):
         self._calls += 1
-        if self._calls == 1:            # nodes
+        if self._calls == 1:  # nodes
             return FakeResultList(
                 [
                     {
@@ -98,7 +113,7 @@ class FakeSessionGraph:
                         "reusable": False,
                         "connection_type": 1,
                         "level": 0,
-                        "weight": 1.0,   # matches test expectation
+                        "weight": 1.0,  # matches test expectation
                         "recyclable": True,
                     },
                     {
@@ -115,7 +130,7 @@ class FakeSessionGraph:
                     },
                 ]
             )
-        if self._calls == 2:            # edges
+        if self._calls == 2:  # edges
             return FakeResultList([{"id": 10, "source": 1, "target": 2}])
         # materials
         return FakeResultList(
@@ -132,14 +147,14 @@ class FakeSessionGraph:
 
 
 class FakeSessionGraphCycle:
-    """Same pattern as above, but returns a graph that contains a cycle."""
+    """Same pattern as above, but returns a graph containing a cycle."""
 
     def __init__(self):
         self._calls = 0
 
     async def run(self, query, **params):
         self._calls += 1
-        if self._calls == 1:            # nodes
+        if self._calls == 1:  # nodes
             return FakeResultList(
                 [
                     {
@@ -168,7 +183,7 @@ class FakeSessionGraphCycle:
                     },
                 ]
             )
-        if self._calls == 2:            # edges (cycle present)
+        if self._calls == 2:  # edges (cycle)
             return FakeResultList(
                 [
                     {"id": 10, "source": 1, "target": 2},
@@ -208,6 +223,10 @@ async def override_get_session_graph_cycle():
 
 async def override_get_session_node():
     yield FakeSessionNode()
+
+
+async def override_get_session_material():
+    yield FakeSessionMaterial()
 
 
 async def override_get_session_score():
@@ -429,6 +448,26 @@ def test_zero_weight():
         },
     )
     assert response.status_code == 422
+
+    app.dependency_overrides.clear()
+
+
+def test_create_material():
+    app.dependency_overrides[get_write_session] = override_get_session_material
+    client = TestClient(app)
+
+    response = client.post(
+        "/materials/",
+        json={"name": "Steel", "weight": 7.8, "co2_value": 1.0, "hardness": 10.0},
+    )
+    assert response.status_code == 200
+    assert response.json() == {
+        "id": 1,
+        "name": "Steel",
+        "weight": 7.8,
+        "co2_value": 1.0,
+        "hardness": 10.0,
+    }
 
     app.dependency_overrides.clear()
 
