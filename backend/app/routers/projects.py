@@ -75,7 +75,7 @@ async def get_graph(
     edges = await res_e.data()
     q_mats = (
         "MATCH (m:Material) RETURN id(m) AS id, m.name AS name, "
-        "m.weight AS weight"
+        "m.weight AS weight, m.co2_value AS co2_value, m.hardness AS hardness"
     )
     try:
         res_m = await session.run(q_mats)

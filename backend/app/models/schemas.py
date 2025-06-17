@@ -6,6 +6,8 @@ from pydantic import BaseModel, Field
 class MaterialBase(BaseModel):
     name: str = Field(..., example="Aluminum")
     weight: float = Field(..., gt=0)
+    co2_value: float = Field(..., gt=0)
+    hardness: float = Field(..., gt=0)
 
 
 class MaterialCreate(MaterialBase):
