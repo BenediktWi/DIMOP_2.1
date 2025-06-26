@@ -44,7 +44,7 @@ class Material(MaterialBase):
 class NodeBase(BaseModel):
     project_id: int
     material_id: int
-    name: str = ""
+    name: str = ''
     parent_id: int | None = None
     atomic: bool = False
     reusable: bool = False

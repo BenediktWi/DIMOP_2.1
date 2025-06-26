@@ -267,7 +267,7 @@ export default function App() {
       }
 
       const node = await response.json()
-      setState((prev) => applyWsMessage(prev, { op: 'create_node', node }))
+      // WebSocket broadcast will create the node in local state
     } catch (err) {
       console.error(err)
       setError('Failed to create node')
