@@ -28,7 +28,7 @@ async def score_project(
     )
 
     result = await session.execute(join_stmt)
-    records = [dict(row) for row in result]
+    records = [dict(row._mapping) for row in result]
 
     factor_map = {
         ConnectionType.SCREW: 0.8,
