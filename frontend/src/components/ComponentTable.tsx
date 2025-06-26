@@ -9,17 +9,24 @@ import { Component } from '../wsMessage'
 
 interface Props {
   components: Component[]
+  onDelete: (id: number) => void
 }
 
 const columnHelper = createColumnHelper<Component>()
 
-export default function ComponentTable({ components }: Props) {
+export default function ComponentTable({ components, onDelete }: Props) {
   const columns = [
     columnHelper.accessor('name', { header: 'Name' }),
     columnHelper.accessor('level', { header: 'Level' }),
     columnHelper.accessor('weight', { header: 'Weight' }),
     columnHelper.accessor('material_id', { header: 'Material' }),
     columnHelper.accessor('sustainability_score', { header: 'Sustainability' }),
+    columnHelper.display({
+      id: 'delete',
+      cell: info => (
+        <button onClick={() => onDelete(info.row.original.id)}>🗑️</button>
+      ),
+    }),
   ]
 
   const table = useReactTable({

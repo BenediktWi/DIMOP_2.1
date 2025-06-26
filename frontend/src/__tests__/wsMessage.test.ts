@@ -99,4 +99,11 @@ describe('applyWsMessage', () => {
     expect(typeof result.edges[0].id).toBe('number')
     expect(result.edges[0]).toEqual({ id: 4, source: 1, target: 2 })
   })
+
+  it('removes a node on delete_node', () => {
+    const state: GraphState = { nodes: [{ id: 1 }, { id: 2 }], edges: [], materials: [] }
+    const result = applyWsMessage(state, { op: 'delete_node', id: 1 })
+    expect(result.nodes).toHaveLength(1)
+    expect(result.nodes[0].id).toBe(2)
+  })
 })

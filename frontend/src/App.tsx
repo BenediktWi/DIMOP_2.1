@@ -285,6 +285,10 @@ export default function App() {
     }).catch((err) => console.error(err))
   }
 
+  const deleteNode = (id: number) => {
+    fetch(`/nodes/${id}`, { method: 'DELETE' }).catch(err => console.error(err))
+  }
+
   /* --------------------------------------------------------------------- */
   /*  9️⃣  Render                                                           */
   /* --------------------------------------------------------------------- */
@@ -443,7 +447,7 @@ export default function App() {
 
       {/* ----------------------------------------------------------------- */}
       <div className="w-1/3 h-full overflow-auto border-l">
-        <ComponentTable components={state.nodes} />
+        <ComponentTable components={state.nodes} onDelete={deleteNode} />
       </div>
     </div>
   )
