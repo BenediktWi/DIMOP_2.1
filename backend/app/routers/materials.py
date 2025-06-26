@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
-from neo4j import AsyncSession, exceptions
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 
 from .websocket import broadcast
 from ..database import get_session, get_write_session
 from ..models.schemas import Material, MaterialCreate
+from ..models.db import Material as MaterialModel
 
 router = APIRouter(prefix="/materials", tags=["materials"])
 
@@ -17,47 +20,18 @@ async def create_material(
     material: MaterialCreate,
     session: AsyncSession = Depends(get_write_session),
 ):
-    """
-    Insert a new `Material` node and return the created object.
-    """
-    query = (
-        "CREATE (m:Material {"
-        "  name: $name, "
-        "  weight: $weight, "
-        "  co2_value: $co2_value, "
-        "  hardness: $hardness"
-        "}) "
-        "RETURN id(m) AS id, "
-        "       m.name AS name, "
-        "       m.weight AS weight, "
-        "       m.co2_value AS co2_value, "
-        "       m.hardness AS hardness"
-    )
+    """Insert a new ``Material`` and return the created object."""
+    db_obj = MaterialModel(**material.model_dump())
+    session.add(db_obj)
     try:
-        result = await session.run(
-            query,
-            name=material.name,
-            weight=material.weight,
-            co2_value=material.co2_value,
-            hardness=material.hardness,
-        )
-    except exceptions.ServiceUnavailable:
-        raise HTTPException(status_code=503, detail="Neo4j unavailable")
+        await session.commit()
+        await session.refresh(db_obj)
+    except SQLAlchemyError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail="DB error") from exc
 
-    record = await result.single()
-    if record is None:
-        raise HTTPException(status_code=404, detail="Resource not found")
-
-    # Notify any live WebSocket clients
-    await broadcast(0, {"op": "create_material", "id": record["id"]})
-
-    return Material(
-        id=record["id"],
-        name=record["name"],
-        weight=record["weight"],
-        co2_value=record["co2_value"],
-        hardness=record["hardness"],
-    )
+    await broadcast(0, {"op": "create_material", "id": db_obj.id})
+    return Material.model_validate(db_obj)
 
 
 # ---------------------------------------------------------------------------
@@ -69,33 +43,12 @@ async def get_material(
     material_id: int,
     session: AsyncSession = Depends(get_session),
 ):
-    """
-    Retrieve a single material by its database ID.
-    """
-    query = (
-        "MATCH (m:Material) WHERE id(m) = $id "
-        "RETURN id(m) AS id, "
-        "       m.name AS name, "
-        "       m.weight AS weight, "
-        "       m.co2_value AS co2_value, "
-        "       m.hardness AS hardness"
-    )
-    try:
-        result = await session.run(query, id=material_id)
-    except exceptions.ServiceUnavailable:
-        raise HTTPException(status_code=503, detail="Neo4j unavailable")
-
-    record = await result.single()
-    if record is None:
+    """Retrieve a single material by its database ID."""
+    result = await session.execute(select(MaterialModel).where(MaterialModel.id == material_id))
+    db_obj = result.scalar_one_or_none()
+    if db_obj is None:
         raise HTTPException(status_code=404, detail="Material not found")
-
-    return Material(
-        id=record["id"],
-        name=record["name"],
-        weight=record["weight"],
-        co2_value=record["co2_value"],
-        hardness=record["hardness"],
-    )
+    return Material.model_validate(db_obj)
 
 
 # ---------------------------------------------------------------------------
@@ -107,16 +60,12 @@ async def delete_material(
     material_id: int,
     session: AsyncSession = Depends(get_write_session),
 ):
-    """
-    Remove a material (and any attached relationships) by its ID.
-    """
-    try:
-        await session.run(
-            "MATCH (m:Material) WHERE id(m) = $id DETACH DELETE m",
-            id=material_id,
-        )
-    except exceptions.ServiceUnavailable:
-        raise HTTPException(status_code=503, detail="Neo4j unavailable")
-
+    """Remove a material by its ID."""
+    result = await session.execute(select(MaterialModel).where(MaterialModel.id == material_id))
+    db_obj = result.scalar_one_or_none()
+    if db_obj is None:
+        raise HTTPException(status_code=404, detail="Material not found")
+    await session.delete(db_obj)
+    await session.commit()
     await broadcast(0, {"op": "delete_material", "id": material_id})
     return {"ok": True}

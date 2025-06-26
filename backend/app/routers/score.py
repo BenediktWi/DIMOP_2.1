@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
-from neo4j import AsyncSession, exceptions
+from fastapi import APIRouter, Depends
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, update
 
 from ..database import get_write_session
 from ..models.schemas import NodeScore, ConnectionType
+from ..models.db import Node as NodeModel, Material as MaterialModel
 
 router = APIRouter(tags=["score"])
 
@@ -12,16 +14,16 @@ async def score_project(
     project_id: int,
     session: AsyncSession = Depends(get_write_session),
 ):
-    query = (
-        "MATCH (p:Project)<-[:PART_OF]-(n:Node)-[:USES]->(m:Material) "
-        "WHERE id(p)=$pid RETURN id(n) AS nid, m.co2_value AS co2, "
-        "n.weight AS weight, n.connection_type AS ctype, n.reusable AS reusable"
-    )
-    try:
-        result = await session.run(query, pid=project_id)
-    except exceptions.ServiceUnavailable:
-        raise HTTPException(status_code=503, detail="Neo4j unavailable")
-    records = await result.data()
+    join_stmt = select(
+        NodeModel.id.label("nid"),
+        MaterialModel.co2_value.label("co2"),
+        NodeModel.weight.label("weight"),
+        NodeModel.connection_type.label("ctype"),
+        NodeModel.reusable.label("reusable"),
+    ).join(MaterialModel, NodeModel.material_id == MaterialModel.id).where(NodeModel.project_id == project_id)
+
+    result = await session.execute(join_stmt)
+    records = [dict(row._mapping) for row in result]
 
     factor_map = {
         ConnectionType.SCREW: 0.8,
@@ -51,11 +53,13 @@ async def score_project(
             * factor(rec.get("ctype"))
             * (0.5 if rec.get("reusable") else 1.0)
         )
-        await session.run(
-            "MATCH (n:Node) WHERE id(n)=$id SET n.sustainability_score=$score",
-            id=rec["nid"],
-            score=score,
+        await session.execute(
+            update(NodeModel)
+            .where(NodeModel.id == rec["nid"])
+            .values(sustainability_score=score)
         )
+        await session.commit()
         scores.append(NodeScore(id=rec["nid"], sustainability_score=score))
 
     return scores
+
