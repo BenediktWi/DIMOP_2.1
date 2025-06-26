@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
-import GraphCanvas from './components/GraphCanvas'
+import GraphCanvas, { layoutNodesByLevel } from './components/GraphCanvas'
 import ComponentTable from './components/ComponentTable'
 import useUndoRedo from './components/useUndoRedo'
 import { applyWsMessage, GraphState, WsMessage, Component } from './wsMessage'
@@ -88,15 +88,7 @@ export default function App() {
         if (!isMounted) return
         setState({
           ...data,
-          nodes: data.nodes.map((n: any) => ({
-            ...n,
-            // give each node a deterministic pseudo‑random position so the graph
-            // is immediately visible before users drag nodes around
-            position: {
-              x: Math.random() * 250,
-              y: Math.random() * 250,
-            },
-          })),
+          nodes: layoutNodesByLevel(data.nodes),
         })
 
         // ensure there is at least one material so the “add node” form works
