@@ -44,15 +44,15 @@ class Material(MaterialBase):
 class NodeBase(BaseModel):
     project_id: int
     material_id: int
-    name: str
+    name: str = ''
     parent_id: int | None = None
-    atomic: bool
-    reusable: bool
+    atomic: bool = False
+    reusable: bool = False
     # allow both Enum values and custom string identifiers
     connection_type: ConnectionType | str | None = None
-    level: int
+    level: int = 0
     weight: float | None = Field(None, gt=0)
-    recyclable: bool
+    recyclable: bool = False
 
     # ---- Validators -------------------------------------------------------
 
