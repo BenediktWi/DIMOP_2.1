@@ -6,7 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from .websocket import broadcast
 from ..database import get_session, get_write_session
 from ..models.schemas import Node, NodeCreate, ConnectionType
-from ..models.db import Node as NodeModel
+from ..models.db import Node as NodeModel, Project as ProjectModel
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
 
@@ -120,4 +120,3 @@ async def delete_node(
     await session.commit()
     await broadcast(pid, {"op": "delete_node", "id": node_id})
     return {"ok": True}
-

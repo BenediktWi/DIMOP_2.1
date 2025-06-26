@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
+from sqlalchemy.exc import SQLAlchemyError
 
 from ..database import get_write_session
 from ..models.schemas import NodeScore, ConnectionType
@@ -14,16 +15,20 @@ async def score_project(
     project_id: int,
     session: AsyncSession = Depends(get_write_session),
 ):
-    join_stmt = select(
-        NodeModel.id.label("nid"),
-        MaterialModel.co2_value.label("co2"),
-        NodeModel.weight.label("weight"),
-        NodeModel.connection_type.label("ctype"),
-        NodeModel.reusable.label("reusable"),
-    ).join(MaterialModel, NodeModel.material_id == MaterialModel.id).where(NodeModel.project_id == project_id)
+    join_stmt = (
+        select(
+            NodeModel.id.label("nid"),
+            MaterialModel.co2_value.label("co2"),
+            NodeModel.weight.label("weight"),
+            NodeModel.connection_type.label("ctype"),
+            NodeModel.reusable.label("reusable"),
+        )
+        .join(MaterialModel, NodeModel.material_id == MaterialModel.id)
+        .where(NodeModel.project_id == project_id)
+    )
 
     result = await session.execute(join_stmt)
-    records = [dict(row._mapping) for row in result]
+    records = [dict(row) for row in result]
 
     factor_map = {
         ConnectionType.SCREW: 0.8,
@@ -53,13 +58,16 @@ async def score_project(
             * factor(rec.get("ctype"))
             * (0.5 if rec.get("reusable") else 1.0)
         )
-        await session.execute(
-            update(NodeModel)
-            .where(NodeModel.id == rec["nid"])
-            .values(sustainability_score=score)
-        )
-        await session.commit()
+        try:
+            await session.execute(
+                update(NodeModel)
+                .where(NodeModel.id == rec["nid"])
+                .values(sustainability_score=score)
+            )
+            await session.commit()
+        except SQLAlchemyError:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail="DB error")
         scores.append(NodeScore(id=rec["nid"], sustainability_score=score))
 
     return scores
-
