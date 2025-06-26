@@ -110,3 +110,64 @@ def test_score_project(client):
     scores = res.json()
     assert scores[0]["id"] == 1
 
+
+def test_finalize_project(client):
+    client.post("/projects/", json={"name": "Demo"})
+    client.post(
+        "/materials/",
+        json={"name": "Steel", "weight": 1.0, "co2_value": 1.0, "hardness": 1.0},
+    )
+    # root node, non atomic
+    client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 1,
+            "name": "Root",
+            "parent_id": None,
+            "atomic": False,
+            "reusable": False,
+            "connection_type": 0,
+            "level": 0,
+            "recyclable": True,
+        },
+    )
+    # child 1
+    client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 1,
+            "name": "Child1",
+            "parent_id": 1,
+            "atomic": True,
+            "reusable": False,
+            "connection_type": 0,
+            "level": 1,
+            "weight": 2.0,
+            "recyclable": True,
+        },
+    )
+    # child 2
+    client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 1,
+            "name": "Child2",
+            "parent_id": 1,
+            "atomic": True,
+            "reusable": False,
+            "connection_type": 0,
+            "level": 1,
+            "weight": 3.0,
+            "recyclable": True,
+        },
+    )
+
+    res = client.post("/projects/1/finalize")
+    assert res.status_code == 200
+    data = res.json()
+    root_node = next(n for n in data if n["id"] == 1)
+    assert root_node["weight"] == 5.0
+

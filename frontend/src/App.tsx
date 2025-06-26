@@ -208,6 +208,21 @@ export default function App() {
 
   const addNode = () => setShowNodeForm(true)
 
+  const finalizeProject = () => {
+    fetch(`/projects/${projectId}/finalize`, { method: 'POST' })
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((data) => {
+        setState((prev) => ({
+          ...prev,
+          nodes: prev.nodes.map((n) => {
+            const updated = data.find((d: any) => d.id === n.id)
+            return updated ? { ...n, weight: updated.weight } : n
+          }),
+        }))
+      })
+      .catch((err) => console.error(err))
+  }
+
   /* --------------------------------------------------------------------- */
   /*  7️⃣  Handle node creation                                             */
   /* --------------------------------------------------------------------- */
@@ -439,6 +454,9 @@ export default function App() {
           </button>
           <button className="border px-2 py-1" onClick={addMaterial}>
             Add Material
+          </button>
+          <button className="border px-2 py-1" onClick={finalizeProject}>
+            Fertigstellen
           </button>
           <button className="border px-2 py-1" onClick={undo}>
             Undo

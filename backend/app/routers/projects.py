@@ -5,8 +5,13 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from .websocket import broadcast
 from ..database import get_session, get_write_session
-from ..models.schemas import Project, ProjectCreate, ConnectionType
-from ..models.db import Project as ProjectModel, Node as NodeModel, Relation as RelationModel, Material as MaterialModel
+from ..models.schemas import Project, ProjectCreate, ConnectionType, Node
+from ..models.db import (
+    Project as ProjectModel,
+    Node as NodeModel,
+    Relation as RelationModel,
+    Material as MaterialModel,
+)
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -135,4 +140,50 @@ async def get_graph(
             calc_weight(n["id"], set())
 
     return {"nodes": nodes, "edges": edges, "materials": materials}
+
+
+# ---------------------------------------------------------------------------
+# FINALIZE PROJECT
+# ---------------------------------------------------------------------------
+
+@router.post("/{project_id}/finalize", response_model=list[Node])
+async def finalize_project(
+    project_id: int,
+    session: AsyncSession = Depends(get_write_session),
+):
+    result = await session.execute(
+        select(NodeModel).where(NodeModel.project_id == project_id)
+    )
+    nodes = list(result.scalars())
+    node_map = {n.id: n for n in nodes}
+
+    def calc_weight(nid: int, visited: set[int]) -> float:
+        if nid in visited:
+            raise HTTPException(status_code=400, detail="Cycle detected")
+        visited.add(nid)
+        node = node_map[nid]
+        if node.atomic:
+            visited.remove(nid)
+            return node.weight or 0.0
+        total = 0.0
+        for child in nodes:
+            if child.parent_id == nid:
+                total += calc_weight(child.id, visited)
+        node.weight = total
+        visited.remove(nid)
+        return total
+
+    for n in nodes:
+        if not n.atomic:
+            calc_weight(n.id, set())
+        session.add(n)
+
+    try:
+        await session.commit()
+    except SQLAlchemyError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail="DB error") from exc
+
+    await broadcast(project_id, {"op": "finalize"})
+    return [Node.model_validate(n) for n in nodes]
 

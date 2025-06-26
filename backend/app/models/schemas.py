@@ -44,15 +44,15 @@ class Material(MaterialBase):
 class NodeBase(BaseModel):
     project_id: int
     material_id: int
-    name: str
+    name: str = ""
     parent_id: int | None = None
-    atomic: bool
-    reusable: bool
+    atomic: bool = False
+    reusable: bool = False
     # allow both Enum values and custom string identifiers
     connection_type: ConnectionType | str | None = None
-    level: int
+    level: int = 0
     weight: float | None = Field(None, gt=0)
-    recyclable: bool
+    recyclable: bool = False
 
     # ---- Validators -------------------------------------------------------
 
@@ -61,8 +61,6 @@ class NodeBase(BaseModel):
         """Validate weight in relation to ``atomic`` flag."""
         if self.atomic and self.weight is None:
             raise ValueError("weight must be provided when node is atomic")
-        if not self.atomic and self.weight is not None:
-            raise ValueError("weight must not be provided when node is not atomic")
         return self
 
     @model_validator(mode="after")
@@ -91,6 +89,12 @@ class NodeCreate(NodeBase):
             raise ValueError("level 0 nodes cannot have a parent")
         if values.level > 0 and values.parent_id is None:
             raise ValueError("non-root nodes must define parent_id")
+        return values
+
+    @model_validator(mode="after")
+    def check_weight_non_atomic(cls, values: "NodeCreate") -> "NodeCreate":
+        if not values.atomic and values.weight is not None:
+            raise ValueError("weight must not be provided when node is not atomic")
         return values
 
 
