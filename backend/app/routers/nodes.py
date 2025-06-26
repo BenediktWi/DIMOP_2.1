@@ -6,7 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from .websocket import broadcast
 from ..database import get_session, get_write_session
 from ..models.schemas import Node, NodeCreate, ConnectionType
-from ..models.db import Node as NodeModel, Project as ProjectModel
+from ..models.db import Node as NodeModel
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
 
