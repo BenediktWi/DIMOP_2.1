@@ -1,25 +1,73 @@
 from fastapi import APIRouter, Depends, HTTPException
-from neo4j import AsyncSession, exceptions
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, update
+from sqlalchemy.exc import SQLAlchemyError
 
-from ..database import get_session
+from ..database import get_write_session
+from ..models.schemas import NodeScore, ConnectionType
+from ..models.db import Node as NodeModel, Material as MaterialModel
 
 router = APIRouter(tags=["score"])
 
 
-@router.post("/score/{project_id}")
+@router.post("/score/{project_id}", response_model=list[NodeScore])
 async def score_project(
     project_id: int,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = Depends(get_write_session),
 ):
-    query = (
-        "MATCH (p:Project)<-[:PART_OF]-(n:Node)-[:USES]->(m:Material) "
-        "WHERE id(p)=$pid RETURN sum(m.weight) AS total"
+    join_stmt = (
+        select(
+            NodeModel.id.label("nid"),
+            MaterialModel.co2_value.label("co2"),
+            NodeModel.weight.label("weight"),
+            NodeModel.connection_type.label("ctype"),
+            NodeModel.reusable.label("reusable"),
+        )
+        .join(MaterialModel, NodeModel.material_id == MaterialModel.id)
+        .where(NodeModel.project_id == project_id)
     )
-    try:
-        result = await session.run(query, pid=project_id)
-    except exceptions.ServiceUnavailable:
-        raise HTTPException(status_code=503, detail="Neo4j unavailable")
-    record = await result.single()
-    total = record["total"] or 0
-    normalized = min(total / 1000.0, 1)
-    return 1 - normalized
+
+    result = await session.execute(join_stmt)
+    records = [dict(row) for row in result]
+
+    factor_map = {
+        ConnectionType.SCREW: 0.8,
+        ConnectionType.BOLT: 1.0,
+        ConnectionType.GLUE: 1.2,
+    }
+
+    def factor(ctype: str | int | ConnectionType | None) -> float:
+        if isinstance(ctype, str):
+            try:
+                ctype = ConnectionType[ctype.upper()]
+            except KeyError:
+                return 1.0
+        else:
+            try:
+                ctype = ConnectionType(ctype)
+            except Exception:
+                return 1.0
+        return factor_map.get(ctype, 1.0)
+
+    scores: list[NodeScore] = []
+    for rec in records:
+        weight = rec.get("weight") or 0.0
+        score = (
+            (rec.get("co2") or 0.0)
+            * weight
+            * factor(rec.get("ctype"))
+            * (0.5 if rec.get("reusable") else 1.0)
+        )
+        try:
+            await session.execute(
+                update(NodeModel)
+                .where(NodeModel.id == rec["nid"])
+                .values(sustainability_score=score)
+            )
+            await session.commit()
+        except SQLAlchemyError:
+            await session.rollback()
+            raise HTTPException(status_code=500, detail="DB error")
+        scores.append(NodeScore(id=rec["nid"], sustainability_score=score))
+
+    return scores

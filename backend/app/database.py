@@ -1,44 +1,39 @@
-from typing import AsyncGenerator
+from __future__ import annotations
+
+from __future__ import annotations
+
 import os
+from typing import AsyncGenerator
 
-from neo4j import AsyncGraphDatabase, AsyncSession, exceptions
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy import text
 
-
-def get_driver(
-    uri: str,
-    user: str | None = None,
-    password: str | None = None,
-):
-    return AsyncGraphDatabase.driver(
-        uri,
-        auth=(user or None, password or None),
-    )
+from .models.db import Base
 
 
-driver = get_driver(
-    uri=os.getenv("NEO4J_URI", "bolt://localhost:7687"),
-    user=os.getenv("NEO4J_USER", "neo4j"),
-    password=os.getenv("NEO4J_PASSWORD", "your_password"),
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./app.db")
+
+engine = create_async_engine(DATABASE_URL, future=True, echo=False)
+async_session = async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def verify_connectivity() -> None:
-    """Ensure the Neo4j database is reachable."""
+    """Ensure the database is reachable and tables exist."""
     try:
-        await driver.verify_connectivity()
-    except exceptions.ServiceUnavailable as exc:
-        raise RuntimeError("Unable to connect to Neo4j") from exc
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+            await conn.execute(text("SELECT 1"))
+    except Exception as exc:
+        raise RuntimeError("Unable to connect to database") from exc
 
 
-async def get_session(
-    *, write: bool = False,
-) -> AsyncGenerator[AsyncSession, None]:
-    async with driver.session(
-        default_access_mode="WRITE" if write else "READ",
-    ) as session:
+async def get_session(*, write: bool = False) -> AsyncGenerator[AsyncSession, None]:
+    """Yield a database session."""
+    async with async_session() as session:
         yield session
 
 
 async def get_write_session() -> AsyncGenerator[AsyncSession, None]:
     async for session in get_session(write=True):
         yield session
+

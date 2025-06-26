@@ -7,7 +7,7 @@ The frontend relies on **ReactFlow v11** for the graph editor. Components using 
 
 - Python 3.11 or newer
 - Node.js 18 or newer
-- A running Neo4j instance (defaults to `bolt://localhost:7687` with user `neo4j`/`your_password`)
+- SQLite is used for persistence (no external database required)
 
 ## Quick start
 
@@ -21,7 +21,7 @@ cd backend
 python -m venv venv
 source venv/bin/activate  # on Windows use "venv\\Scripts\\activate"
 pip install -r requirements.txt
-NEO4J_PASSWORD=your_password python -m uvicorn app.main:app --reload
+python -m uvicorn app.main:app --reload
 ```
 
 ### 2. Start the frontend
@@ -59,7 +59,7 @@ project on subsequent visits.
 
 ### Configuration
 
-If your Neo4j database is not running locally use the environment variables `NEO4J_URI`, `NEO4J_USER` and `NEO4J_PASSWORD` to override the defaults.
+Set the ``DATABASE_URL`` environment variable to change the SQLite database location. The default is ``sqlite+aiosqlite:///./backend/app.db``.
 
 ### Building for production
 

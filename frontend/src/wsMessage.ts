@@ -1,7 +1,35 @@
+export interface Component {
+  id: number
+  name?: string
+  level?: number
+  parent_id?: number | null
+  atomic?: boolean
+  weight?: number
+  reusable?: boolean
+  connection_type?: string | number
+  material_id?: number
+  sustainability_score?: number
+  position?: { x: number; y: number }
+}
+
+export interface Material {
+  id: number
+  name?: string
+  weight?: number
+  co2_value?: number
+  hardness?: number
+}
+
+export interface Edge {
+  id: number
+  source: number
+  target: number
+}
+
 export interface GraphState {
-  nodes: any[]
-  edges: any[]
-  materials: any[]
+  nodes: Component[]
+  edges: Edge[]
+  materials: Material[]
 }
 
 export interface WsMessage {
@@ -13,10 +41,26 @@ export function applyWsMessage(state: GraphState, msg: WsMessage): GraphState {
   switch (msg.op) {
     case 'create_node':
       if ('node' in msg) {
-        return { ...state, nodes: [...state.nodes, msg.node] }
+        const n = {
+          ...msg.node,
+          position: msg.node.position ?? {
+            x: Math.random() * 250,
+            y: Math.random() * 250,
+          },
+        }
+        if (n.atomic === false) {
+          delete (n as any).weight
+        }
+        return { ...state, nodes: [...state.nodes, n] }
       }
       if ('id' in msg) {
-        return { ...state, nodes: [...state.nodes, { id: msg.id }] }
+        return {
+          ...state,
+          nodes: [
+            ...state.nodes,
+            { id: msg.id, position: { x: Math.random() * 250, y: Math.random() * 250 } },
+          ],
+        }
       }
       return state
     case 'delete_node':

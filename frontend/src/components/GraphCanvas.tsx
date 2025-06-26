@@ -1,21 +1,20 @@
 import React from 'react'
-import ReactFlow, { MiniMap, Controls, Background, addEdge } from 'reactflow'
+import ReactFlow, { MiniMap, Controls, Background, Connection } from 'reactflow'
 import 'reactflow/dist/style.css'
 
 
 interface Props {
   nodes: any[]
   edges: any[]
-  onChange: (state: { nodes: any[]; edges: any[] }) => void
+  onConnectEdge: (connection: Connection) => void
 }
 
-export default function GraphCanvas({ nodes, edges, onChange }: Props) {
-  const onConnect = (params: any) => onChange({ nodes, edges: addEdge(params, edges) })
+export default function GraphCanvas({ nodes, edges, onConnectEdge }: Props) {
   return (
     <ReactFlow
       nodes={nodes}
       edges={edges}
-      onConnect={onConnect}
+      onConnect={onConnectEdge}
       fitView
       style={{ width: '100%', height: '100%' }}
     >
