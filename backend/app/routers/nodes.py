@@ -16,16 +16,19 @@ async def create_node(
     node: NodeCreate,
     session: AsyncSession = Depends(get_write_session),
 ):
-    # Prüfe, ob der Parent im gleichen Projekt existiert
+    # Prüfe, ob der Parent im gleichen Projekt existiert und ermittle dessen Level
     if node.parent_id is not None:
         res = await session.execute(
-            select(NodeModel.id).where(
+            select(NodeModel.level).where(
                 NodeModel.id == node.parent_id,
                 NodeModel.project_id == node.project_id,
             )
         )
-        if res.scalar_one_or_none() is None:
+        parent_level = res.scalar_one_or_none()
+        if parent_level is None:
             raise HTTPException(status_code=404, detail="Parent node not found")
+        if node.level != parent_level + 1:
+            raise HTTPException(status_code=400, detail="Invalid node level")
 
     # Verarbeite connection_type in DB-Wert und Response-String
     ctype_db = node.connection_type

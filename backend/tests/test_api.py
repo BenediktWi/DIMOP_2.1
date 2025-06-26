@@ -171,3 +171,65 @@ def test_finalize_project(client):
     root_node = next(n for n in data if n["id"] == 1)
     assert root_node["weight"] == 5.0
 
+
+def test_child_level_validation(client):
+    client.post("/projects/", json={"name": "Demo"})
+    client.post(
+        "/materials/",
+        json={"name": "Steel", "weight": 1.0, "co2_value": 1.0, "hardness": 1.0},
+    )
+
+    # root node
+    res = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 1,
+            "name": "Root",
+            "parent_id": None,
+            "atomic": True,
+            "reusable": False,
+            "connection_type": 0,
+            "level": 0,
+            "weight": 1.0,
+            "recyclable": True,
+        },
+    )
+    assert res.status_code == 200
+
+    # valid child (level 1)
+    res = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 1,
+            "name": "Child",
+            "parent_id": 1,
+            "atomic": True,
+            "reusable": False,
+            "connection_type": 0,
+            "level": 1,
+            "weight": 1.0,
+            "recyclable": True,
+        },
+    )
+    assert res.status_code == 200
+
+    # invalid child (level mismatch)
+    res = client.post(
+        "/nodes/",
+        json={
+            "project_id": 1,
+            "material_id": 1,
+            "name": "BadChild",
+            "parent_id": 1,
+            "atomic": True,
+            "reusable": False,
+            "connection_type": 0,
+            "level": 2,
+            "weight": 1.0,
+            "recyclable": True,
+        },
+    )
+    assert res.status_code == 400
+
