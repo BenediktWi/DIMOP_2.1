@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from sqlalchemy.exc import SQLAlchemyError
 
 from ..database import get_write_session
 from ..models.schemas import NodeScore, ConnectionType
@@ -24,7 +23,7 @@ async def score_project(
     ).join(MaterialModel, NodeModel.material_id == MaterialModel.id).where(NodeModel.project_id == project_id)
 
     result = await session.execute(join_stmt)
-    records = [dict(row) for row in result]
+    records = [dict(row._mapping) for row in result]
 
     factor_map = {
         ConnectionType.SCREW: 0.8,

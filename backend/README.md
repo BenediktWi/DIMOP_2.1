@@ -17,7 +17,7 @@ The `pyproject.toml` file is kept only for reference and is not used by these in
 
 ## Running tests
 
-The `tests/` directory contains pytest-based tests. They use a mocked Neo4j session so no database is required. Install the dependencies and run the tests from within `backend`:
+The `tests/` directory contains pytest-based tests. They run against an in-memory SQLite database. Install the dependencies and run the tests from within `backend`:
 
 ```bash
 cd backend
