@@ -80,8 +80,18 @@ async def create_node(
         "recyclable": node.recyclable,
     }
 
-    # Broadcasten und zurückgeben
+    # Broadcasten und Relation erzeugen, falls Parent vorhanden ist
     await broadcast(node.project_id, {"op": "create_node", "node": node_data})
+    if node.parent_id is not None:
+        await broadcast(
+            node.project_id,
+            {
+                "op": "create_relation",
+                "id": -db_obj.id,
+                "source": node.parent_id,
+                "target": db_obj.id,
+            },
+        )
     return Node(**node_data)
 
 

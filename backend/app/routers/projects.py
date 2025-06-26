@@ -89,11 +89,24 @@ async def get_graph(
         )
 
     # 2) Edges
-    result_edges = await session.execute(select(RelationModel).where(RelationModel.project_id == project_id))
+    result_edges = await session.execute(
+        select(RelationModel).where(RelationModel.project_id == project_id)
+    )
     edges = [
         {"id": rel.id, "source": rel.source_id, "target": rel.target_id}
         for rel in result_edges.scalars()
     ]
+
+    # add edges for parent-child relations using negative ids
+    for n in nodes:
+        if n["parent_id"] is not None:
+            edges.append(
+                {
+                    "id": -n["id"],
+                    "source": n["parent_id"],
+                    "target": n["id"],
+                }
+            )
 
     # 3) Materials
     res_mats = await session.execute(select(MaterialModel))
