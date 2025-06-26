@@ -14,9 +14,17 @@ interface Props {
   nodes: any[]
   edges: any[]
   onConnectEdge: (connection: Connection) => void
+  onDeleteNodes?: (ids: number[]) => void
+  onDeleteEdges?: (ids: number[]) => void
 }
 
-export default function GraphCanvas({ nodes, edges, onConnectEdge }: Props) {
+export default function GraphCanvas({
+  nodes,
+  edges,
+  onConnectEdge,
+  onDeleteNodes = () => {},
+  onDeleteEdges = () => {},
+}: Props) {
   const rfNodes: RFNode[] = nodes.map((n) => ({
     id: String(n.id),
     position: n.position ?? { x: 0, y: 0 },
@@ -33,6 +41,8 @@ export default function GraphCanvas({ nodes, edges, onConnectEdge }: Props) {
       nodes={rfNodes}
       edges={rfEdges}
       onConnect={onConnectEdge}
+      onNodesDelete={nds => onDeleteNodes(nds.map(n => Number(n.id)))}
+      onEdgesDelete={eds => onDeleteEdges(eds.map(e => Number(e.id)))}
       fitView
       style={{ width: '100%', height: '100%' }}
     >

@@ -99,4 +99,34 @@ describe('applyWsMessage', () => {
     expect(typeof result.edges[0].id).toBe('number')
     expect(result.edges[0]).toEqual({ id: 4, source: 1, target: 2 })
   })
+
+  it('removes a node for delete_node', () => {
+    const state: GraphState = {
+      nodes: [{ id: 1 }],
+      edges: [],
+      materials: [],
+    }
+    const result = applyWsMessage(state, { op: 'delete_node', id: 1 })
+    expect(result.nodes).toHaveLength(0)
+  })
+
+  it('removes a relation for delete_relation', () => {
+    const state: GraphState = {
+      nodes: [],
+      edges: [{ id: 1, source: 1, target: 2 }],
+      materials: [],
+    }
+    const result = applyWsMessage(state, { op: 'delete_relation', id: 1 })
+    expect(result.edges).toHaveLength(0)
+  })
+
+  it('removes a material for delete_material', () => {
+    const state: GraphState = {
+      nodes: [],
+      edges: [],
+      materials: [{ id: 5 }],
+    }
+    const result = applyWsMessage(state, { op: 'delete_material', id: 5 })
+    expect(result.materials).toHaveLength(0)
+  })
 })
