@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
-from neo4j import AsyncSession, exceptions
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 
 from .websocket import broadcast
 from ..database import get_session, get_write_session
 from ..models.schemas import Project, ProjectCreate, ConnectionType
+from ..models.db import Project as ProjectModel, Node as NodeModel, Relation as RelationModel, Material as MaterialModel
 
 router = APIRouter(prefix="/projects", tags=["projects"])
 
@@ -17,21 +20,17 @@ async def create_project(
     project: ProjectCreate,
     session: AsyncSession = Depends(get_write_session),
 ):
-    query = (
-        "CREATE (p:Project {name: $name}) "
-        "RETURN id(p) AS id, p.name AS name"
-    )
+    db_obj = ProjectModel(name=project.name)
+    session.add(db_obj)
     try:
-        result = await session.run(query, name=project.name)
-    except exceptions.ServiceUnavailable:
-        raise HTTPException(status_code=503, detail="Neo4j unavailable")
+        await session.commit()
+        await session.refresh(db_obj)
+    except SQLAlchemyError as exc:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail="DB error") from exc
 
-    record = await result.single()
-    if record is None:
-        raise HTTPException(status_code=404, detail="Resource not found")
-
-    await broadcast(record["id"], {"op": "create_project", "id": record["id"]})
-    return Project(id=record["id"], name=record["name"])
+    await broadcast(db_obj.id, {"op": "create_project", "id": db_obj.id})
+    return Project(id=db_obj.id, name=db_obj.name)
 
 
 # ---------------------------------------------------------------------------
@@ -43,20 +42,11 @@ async def get_project(
     project_id: int,
     session: AsyncSession = Depends(get_session),
 ):
-    query = (
-        "MATCH (p:Project) WHERE id(p)=$id "
-        "RETURN id(p) AS id, p.name AS name"
-    )
-    try:
-        result = await session.run(query, id=project_id)
-    except exceptions.ServiceUnavailable:
-        raise HTTPException(status_code=503, detail="Neo4j unavailable")
-
-    record = await result.single()
-    if record is None:
+    result = await session.execute(select(ProjectModel).where(ProjectModel.id == project_id))
+    db_obj = result.scalar_one_or_none()
+    if db_obj is None:
         raise HTTPException(status_code=404, detail="Project not found")
-
-    return Project(id=record["id"], name=record["name"])
+    return Project(id=db_obj.id, name=db_obj.name)
 
 
 # ---------------------------------------------------------------------------
@@ -68,61 +58,50 @@ async def get_graph(
     project_id: int,
     session: AsyncSession = Depends(get_session),
 ):
-    # 1) Nodes
-    q_nodes = (
-        "MATCH (p:Project)<-[:PART_OF]-(n:Node)-[:USES]->(m:Material) "
-        "WHERE id(p)=$pid "
-        "RETURN id(n) AS id, "
-        "       id(m) AS material_id, "
-        "       n.name AS name, "
-        "       n.parent_id AS parent_id, "
-        "       n.atomic AS atomic, "
-        "       n.reusable AS reusable, "
-        "       n.connection_type AS connection_type, "
-        "       n.level AS level, "
-        "       n.weight AS weight, "
-        "       n.recyclable AS recyclable, "
-        "       n.sustainability_score AS sustainability_score"
-    )
-    try:
-        result = await session.run(q_nodes, pid=project_id)
-    except exceptions.ServiceUnavailable:
-        raise HTTPException(status_code=503, detail="Neo4j unavailable")
-    nodes = await result.data()
-    for n in nodes:
-        cval = n.get("connection_type")
+    result_nodes = await session.execute(select(NodeModel).where(NodeModel.project_id == project_id))
+    nodes = []
+    for db_node in result_nodes.scalars():
+        cval = db_node.connection_type
         if isinstance(cval, int):
             try:
-                n["connection_type"] = ConnectionType(cval).name
+                cval = ConnectionType(cval).name
             except ValueError:
-                n["connection_type"] = str(cval)
+                cval = str(cval)
+        nodes.append(
+            {
+                "id": db_node.id,
+                "material_id": db_node.material_id,
+                "name": db_node.name,
+                "parent_id": db_node.parent_id,
+                "atomic": db_node.atomic,
+                "reusable": db_node.reusable,
+                "connection_type": cval,
+                "level": db_node.level,
+                "weight": db_node.weight,
+                "recyclable": db_node.recyclable,
+                "sustainability_score": db_node.sustainability_score,
+            }
+        )
 
     # 2) Edges
-    q_edges = (
-        "MATCH (p:Project)<-[:PART_OF]-(s:Node)-[r:LINK]->(t:Node) "
-        "WHERE id(p)=$pid "
-        "RETURN id(r) AS id, id(s) AS source, id(t) AS target"
-    )
-    try:
-        res_e = await session.run(q_edges, pid=project_id)
-    except exceptions.ServiceUnavailable:
-        raise HTTPException(status_code=503, detail="Neo4j unavailable")
-    edges = await res_e.data()
+    result_edges = await session.execute(select(RelationModel).where(RelationModel.project_id == project_id))
+    edges = [
+        {"id": rel.id, "source": rel.source_id, "target": rel.target_id}
+        for rel in result_edges.scalars()
+    ]
 
     # 3) Materials
-    q_mats = (
-        "MATCH (m:Material) "
-        "RETURN id(m) AS id, "
-        "       m.name AS name, "
-        "       m.weight AS weight, "
-        "       m.co2_value AS co2_value, "
-        "       m.hardness AS hardness"
-    )
-    try:
-        res_m = await session.run(q_mats)
-    except exceptions.ServiceUnavailable:
-        raise HTTPException(status_code=503, detail="Neo4j unavailable")
-    materials = await res_m.data()
+    res_mats = await session.execute(select(MaterialModel))
+    materials = [
+        {
+            "id": m.id,
+            "name": m.name,
+            "weight": m.weight,
+            "co2_value": m.co2_value,
+            "hardness": m.hardness,
+        }
+        for m in res_mats.scalars()
+    ]
 
     # ---------------------------------------------------------------------
     # Aggregate weights for non-atomic nodes (recursive, detects cycles)
@@ -156,3 +135,4 @@ async def get_graph(
             calc_weight(n["id"], set())
 
     return {"nodes": nodes, "edges": edges, "materials": materials}
+
