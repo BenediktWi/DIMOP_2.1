@@ -120,4 +120,3 @@ async def delete_node(
     await session.commit()
     await broadcast(pid, {"op": "delete_node", "id": node_id})
     return {"ok": True}
-

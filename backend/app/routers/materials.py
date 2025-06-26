@@ -44,7 +44,9 @@ async def get_material(
     session: AsyncSession = Depends(get_session),
 ):
     """Retrieve a single material by its database ID."""
-    result = await session.execute(select(MaterialModel).where(MaterialModel.id == material_id))
+    result = await session.execute(
+        select(MaterialModel).where(MaterialModel.id == material_id)
+    )
     db_obj = result.scalar_one_or_none()
     if db_obj is None:
         raise HTTPException(status_code=404, detail="Material not found")
@@ -61,11 +63,19 @@ async def delete_material(
     session: AsyncSession = Depends(get_write_session),
 ):
     """Remove a material by its ID."""
-    result = await session.execute(select(MaterialModel).where(MaterialModel.id == material_id))
+    # Optional: use the imported `delete` construct instead of loading the object
+    # await session.execute(delete(MaterialModel).where(MaterialModel.id == material_id))
+    # await session.commit()
+
+    # Or, as before, load-and-delete:
+    result = await session.execute(
+        select(MaterialModel).where(MaterialModel.id == material_id)
+    )
     db_obj = result.scalar_one_or_none()
     if db_obj is None:
         raise HTTPException(status_code=404, detail="Material not found")
     await session.delete(db_obj)
     await session.commit()
+
     await broadcast(0, {"op": "delete_material", "id": material_id})
     return {"ok": True}
