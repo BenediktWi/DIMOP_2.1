@@ -100,6 +100,17 @@ describe('applyWsMessage', () => {
     expect(result.edges[0]).toEqual({ id: 4, source: 1, target: 2 })
   })
 
+  it('supports negative ids for create_relation', () => {
+    const state: GraphState = { nodes: [], edges: [], materials: [] }
+    const result = applyWsMessage(state, {
+      op: 'create_relation',
+      id: -3,
+      source: 1,
+      target: 2,
+    })
+    expect(result.edges[0]).toEqual({ id: -3, source: 1, target: 2 })
+  })
+
   it('removes a node for delete_node', () => {
     const state: GraphState = {
       nodes: [{ id: 1 }],
