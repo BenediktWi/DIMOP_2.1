@@ -2,10 +2,10 @@ import os
 
 os.environ["TESTING"] = "1"
 
-import pytest
-from pydantic import ValidationError
+import pytest  # noqa: E402
+from pydantic import ValidationError  # noqa: E402
 
-from app.models.schemas import NodeCreate
+from app.models.schemas import NodeCreate  # noqa: E402
 
 
 def test_level_zero_no_parent_ok():
