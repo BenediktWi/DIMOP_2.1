@@ -19,6 +19,23 @@ export function layoutNodesByLevel(nodes: any[]) {
   })
 }
 
+function adaptNodes(nodes: any[]) {
+  return layoutNodesByLevel(nodes).map(n => ({
+    ...n,
+    id: String(n.id),
+    data: { label: n.name ?? String(n.id) },
+  }))
+}
+
+function adaptEdges(edges: any[]) {
+  return edges.map(e => ({
+    ...e,
+    id: String(e.id),
+    source: String(e.source),
+    target: String(e.target),
+  }))
+}
+
 
 interface Props {
   nodes: any[]
@@ -27,7 +44,8 @@ interface Props {
 }
 
 export default function GraphCanvas({ nodes, edges, onConnectEdge }: Props) {
-  const laidOut = layoutNodesByLevel(nodes)
+  const laidOut = adaptNodes(nodes)
+  const adaptedEdges = adaptEdges(edges)
   const maxLevel = Math.max(0, ...nodes.map(n => n.level ?? 0))
 
   return (
@@ -48,7 +66,7 @@ export default function GraphCanvas({ nodes, edges, onConnectEdge }: Props) {
       ))}
       <ReactFlow
         nodes={laidOut}
-        edges={edges}
+        edges={adaptedEdges}
         onConnect={onConnectEdge}
         fitView
         style={{ width: '100%', height: '100%' }}
