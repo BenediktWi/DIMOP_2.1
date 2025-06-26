@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import GraphCanvas from './components/GraphCanvas'
 import ComponentTable from './components/ComponentTable'
+import MaterialTable from './components/MaterialTable'
 import useUndoRedo from './components/useUndoRedo'
 import { applyWsMessage, GraphState, WsMessage, Component } from './wsMessage'
 
@@ -223,6 +224,18 @@ export default function App() {
       .catch((err) => console.error(err))
   }
 
+  const deleteNode = (id: number) => {
+    fetch(`/nodes/${id}`, { method: 'DELETE' }).catch((err) => console.error(err))
+  }
+
+  const deleteEdge = (id: number) => {
+    fetch(`/relations/${id}`, { method: 'DELETE' }).catch((err) => console.error(err))
+  }
+
+  const deleteMaterial = (id: number) => {
+    fetch(`/materials/${id}`, { method: 'DELETE' }).catch((err) => console.error(err))
+  }
+
   /* --------------------------------------------------------------------- */
   /*  7️⃣  Handle node creation                                             */
   /* --------------------------------------------------------------------- */
@@ -315,7 +328,13 @@ export default function App() {
     <div className="flex h-full w-full">
       {/* ----------------------------------------------------------------- */}
       <div className="w-2/3 h-full">
-        <GraphCanvas nodes={state.nodes} edges={state.edges} onConnectEdge={handleConnect} />
+        <GraphCanvas
+          nodes={state.nodes}
+          edges={state.edges}
+          onConnectEdge={handleConnect}
+          onDeleteNodes={(ids) => ids.forEach(deleteNode)}
+          onDeleteEdges={(ids) => ids.forEach(deleteEdge)}
+        />
 
         {/* ----------------------- Create node overlay -------------------- */}
         {showNodeForm && (
@@ -470,6 +489,7 @@ export default function App() {
       {/* ----------------------------------------------------------------- */}
       <div className="w-1/3 h-full overflow-auto border-l">
         <ComponentTable components={state.nodes} />
+        <MaterialTable materials={state.materials} onDelete={deleteMaterial} />
       </div>
     </div>
   )
