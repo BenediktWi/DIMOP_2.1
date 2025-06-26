@@ -16,6 +16,7 @@ async def create_node(
     node: NodeCreate,
     session: AsyncSession = Depends(get_write_session),
 ):
+    # Prüfe, ob der Parent im gleichen Projekt existiert
     if node.parent_id is not None:
         res = await session.execute(
             select(NodeModel.id).where(
@@ -26,6 +27,7 @@ async def create_node(
         if res.scalar_one_or_none() is None:
             raise HTTPException(status_code=404, detail="Parent node not found")
 
+    # Verarbeite connection_type in DB-Wert und Response-String
     ctype_db = node.connection_type
     if isinstance(ctype_db, ConnectionType):
         ctype_db_val = int(ctype_db)
@@ -37,6 +39,7 @@ async def create_node(
         ctype_db_val = ctype_db
         ctype_resp = ctype_db
 
+    # Erstelle das Node-Objekt
     db_obj = NodeModel(
         project_id=node.project_id,
         material_id=node.material_id,
@@ -50,6 +53,8 @@ async def create_node(
         recyclable=node.recyclable,
     )
     session.add(db_obj)
+
+    # Commit und Refresh mit Fehlerbehandlung
     try:
         await session.commit()
         await session.refresh(db_obj)
@@ -57,6 +62,7 @@ async def create_node(
         await session.rollback()
         raise HTTPException(status_code=500, detail="DB error") from exc
 
+    # Bereite das Response-Objekt vor
     node_data = {
         "id": db_obj.id,
         "project_id": node.project_id,
@@ -71,6 +77,7 @@ async def create_node(
         "recyclable": node.recyclable,
     }
 
+    # Broadcasten und zurückgeben
     await broadcast(node.project_id, {"op": "create_node", "node": node_data})
     return Node(**node_data)
 
@@ -84,13 +91,16 @@ async def get_node(
     db_obj = result.scalar_one_or_none()
     if db_obj is None:
         raise HTTPException(status_code=404, detail="Node not found")
+
+    # Mappe connection_type zurück auf den Namen
     ctype_val = db_obj.connection_type
-    ctype_resp = None
+    ctype_resp: str | None = None
     if isinstance(ctype_val, int):
         try:
             ctype_resp = ConnectionType(ctype_val).name
         except ValueError:
             ctype_resp = str(ctype_val)
+
     return Node(
         id=db_obj.id,
         project_id=db_obj.project_id,
@@ -115,6 +125,7 @@ async def delete_node(
     db_obj = res.scalar_one_or_none()
     if db_obj is None:
         raise HTTPException(status_code=404, detail="Node not found")
+
     pid = db_obj.project_id
     await session.delete(db_obj)
     await session.commit()

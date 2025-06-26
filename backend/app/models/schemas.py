@@ -85,7 +85,13 @@ class NodeBase(BaseModel):
 
 
 class NodeCreate(NodeBase):
-    pass
+    @model_validator(mode="after")
+    def check_parent_id(cls, values: "NodeCreate") -> "NodeCreate":
+        if values.level == 0 and values.parent_id is not None:
+            raise ValueError("level 0 nodes cannot have a parent")
+        if values.level > 0 and values.parent_id is None:
+            raise ValueError("non-root nodes must define parent_id")
+        return values
 
 
 class Node(NodeBase):
