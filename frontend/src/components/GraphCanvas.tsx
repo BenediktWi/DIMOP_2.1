@@ -1,5 +1,5 @@
 import React from 'react'
-import ReactFlow, { MiniMap, Controls, Background, Connection } from 'reactflow'
+import ReactFlow, { MiniMap, Controls, Background, Connection, useStore } from 'reactflow'
 import 'reactflow/dist/style.css'
 
 /** Fixed spacing for node layout */
@@ -47,23 +47,37 @@ export default function GraphCanvas({ nodes, edges, onConnectEdge }: Props) {
   const laidOut = adaptNodes(nodes)
   const adaptedEdges = adaptEdges(edges)
   const maxLevel = Math.max(0, ...nodes.map(n => n.level ?? 0))
+  const [x, y, zoom] = useStore(state => state.transform)
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {Array.from({ length: maxLevel + 1 }).map((_, lvl) => (
-        <div
-          key={lvl}
-          style={{
-            position: 'absolute',
-            left: lvl * X_OFFSET,
-            top: 0,
-            bottom: 0,
-            width: X_OFFSET,
-            borderRight: '1px solid #eee',
-            pointerEvents: 'none',
-          }}
-        />
-      ))}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          bottom: 0,
+          left: 0,
+          right: 0,
+          pointerEvents: 'none',
+          transform: `translate(${x}px, ${y}px) scale(${zoom})`,
+          transformOrigin: '0 0',
+        }}
+      >
+        {Array.from({ length: maxLevel + 1 }).map((_, lvl) => (
+          <div
+            key={lvl}
+            style={{
+              position: 'absolute',
+              left: lvl * X_OFFSET,
+              top: 0,
+              bottom: 0,
+              width: X_OFFSET,
+              borderRight: '1px dashed #eee',
+              pointerEvents: 'none',
+            }}
+          />
+        ))}
+      </div>
       <ReactFlow
         nodes={laidOut}
         edges={adaptedEdges}
