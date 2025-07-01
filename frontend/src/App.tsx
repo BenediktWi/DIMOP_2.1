@@ -342,12 +342,14 @@ export default function App() {
               onChange={(e) => handleParentChange(e.target.value)}
             >
               <option value="">Select parent</option>
-              {availableNodes.map((n) => (
-                <option key={n.id} value={n.id}>
-                  {n.id}
-                  {n.name ? ` - ${n.name}` : ''}
-                </option>
-              ))}
+              {availableNodes
+                .filter((n) => (n.level ?? 0) === newNode.level - 1)
+                .map((n) => (
+                  <option key={n.id} value={n.id}>
+                    {n.id}
+                    {n.name ? ` - ${n.name}` : ''}
+                  </option>
+                ))}
             </select>
 
             {/* Atomic + weight */}

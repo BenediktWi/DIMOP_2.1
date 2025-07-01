@@ -1,14 +1,14 @@
-import asyncio
 import os
+import asyncio
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-os.environ["TESTING"] = "1"
-
 from app import app as fastapi_app
 from app.database import get_session, get_write_session
 from app.models.db import Base
+
+os.environ["TESTING"] = "1"
 
 
 @pytest.fixture()
