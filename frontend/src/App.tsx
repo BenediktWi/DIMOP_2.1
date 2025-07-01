@@ -1,10 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react'
-import GraphCanvas from './components/GraphCanvas'
+import GraphCanvas, { layoutNodesByLevel } from './components/GraphCanvas'
 import ComponentTable from './components/ComponentTable'
-import MaterialTable from './components/MaterialTable'
 import useUndoRedo from './components/useUndoRedo'
 import { applyWsMessage, GraphState, WsMessage, Component } from './wsMessage'
-import filterParentCandidates from './filterParentCandidates'
 
 /**
  * 🔧 Keep a single source‑of‑truth for the allowed connection types so we can
@@ -59,7 +57,6 @@ export default function App() {
   const wsRef = useRef<WebSocket | null>(null)
   const [showNodeForm, setShowNodeForm] = useState(false)
   const [newNode, setNewNode] = useState<NewNodeState>(DEFAULT_NEW_NODE)
-  const [allNodes, setAllNodes] = useState<Component[]>([])
   const [availableNodes, setAvailableNodes] = useState<Component[]>([])
   const [availableLevels, setAvailableLevels] = useState<number[]>([])
 
@@ -91,15 +88,7 @@ export default function App() {
         if (!isMounted) return
         setState({
           ...data,
-          nodes: data.nodes.map((n: any) => ({
-            ...n,
-            // give each node a deterministic pseudo‑random position so the graph
-            // is immediately visible before users drag nodes around
-            position: {
-              x: Math.random() * 250,
-              y: Math.random() * 250,
-            },
-          })),
+          nodes: layoutNodesByLevel(data.nodes),
         })
 
         // ensure there is at least one material so the “add node” form works
@@ -162,16 +151,12 @@ export default function App() {
     fetch(`/projects/${projectId}/graph`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((data) => {
-        setAllNodes(data.nodes)
+        setAvailableNodes(data.nodes)
         const max = Math.max(0, ...data.nodes.map((n: any) => n.level ?? 0))
         setAvailableLevels(Array.from({ length: max + 2 }, (_, i) => i))
       })
       .catch((err) => console.error(err))
   }, [showNodeForm, projectId])
-
-  useEffect(() => {
-    setAvailableNodes(filterParentCandidates(allNodes, newNode.level))
-  }, [allNodes, newNode.level])
 
   /* --------------------------------------------------------------------- */
   /*  5️⃣  High‑level render guards                                         */
@@ -214,33 +199,6 @@ export default function App() {
   }
 
   const addNode = () => setShowNodeForm(true)
-
-  const finalizeProject = () => {
-    fetch(`/projects/${projectId}/finalize`, { method: 'POST' })
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((data) => {
-        setState((prev) => ({
-          ...prev,
-          nodes: prev.nodes.map((n) => {
-            const updated = data.find((d: any) => d.id === n.id)
-            return updated ? { ...n, weight: updated.weight } : n
-          }),
-        }))
-      })
-      .catch((err) => console.error(err))
-  }
-
-  const deleteNode = (id: number) => {
-    fetch(`/nodes/${id}`, { method: 'DELETE' }).catch((err) => console.error(err))
-  }
-
-  const deleteEdge = (id: number) => {
-    fetch(`/relations/${id}`, { method: 'DELETE' }).catch((err) => console.error(err))
-  }
-
-  const deleteMaterial = (id: number) => {
-    fetch(`/materials/${id}`, { method: 'DELETE' }).catch((err) => console.error(err))
-  }
 
   /* --------------------------------------------------------------------- */
   /*  7️⃣  Handle node creation                                             */
@@ -286,7 +244,7 @@ export default function App() {
       }
 
       const node = await response.json()
-      // WebSocket broadcast will create the node in local state
+      setState((prev) => applyWsMessage(prev, { op: 'create_node', node }))
     } catch (err) {
       console.error(err)
       setError('Failed to create node')
@@ -296,7 +254,6 @@ export default function App() {
       setNewNode(DEFAULT_NEW_NODE)
       // clear cached selectors so they refresh next time
       setAvailableNodes([])
-      setAllNodes([])
       setAvailableLevels([])
     }
   }
@@ -305,7 +262,13 @@ export default function App() {
   /*  8️⃣  Misc. handlers                                                   */
   /* --------------------------------------------------------------------- */
   const handleParentChange = (pid: string) => {
-    setNewNode((prev) => ({ ...prev, parent_id: pid }))
+    if (pid === '') {
+      setNewNode((prev) => ({ ...prev, parent_id: '', level: 0 }))
+      return
+    }
+    const parent = availableNodes.find((n) => String(n.id) === pid)
+    const lvl = parent ? (parent.level ?? 0) + 1 : 1
+    setNewNode((prev) => ({ ...prev, parent_id: pid, level: lvl }))
   }
 
   const handleConnect = (connection: { source?: string; target?: string }) => {
@@ -322,6 +285,10 @@ export default function App() {
     }).catch((err) => console.error(err))
   }
 
+  const deleteNode = (id: number) => {
+    fetch(`/nodes/${id}`, { method: 'DELETE' }).catch(err => console.error(err))
+  }
+
   /* --------------------------------------------------------------------- */
   /*  9️⃣  Render                                                           */
   /* --------------------------------------------------------------------- */
@@ -329,13 +296,7 @@ export default function App() {
     <div className="flex h-full w-full">
       {/* ----------------------------------------------------------------- */}
       <div className="w-2/3 h-full">
-        <GraphCanvas
-          nodes={state.nodes}
-          edges={state.edges}
-          onConnectEdge={handleConnect}
-          onDeleteNodes={(ids) => ids.forEach(deleteNode)}
-          onDeleteEdges={(ids) => ids.forEach(deleteEdge)}
-        />
+        <GraphCanvas nodes={state.nodes} edges={state.edges} onConnectEdge={handleConnect} />
 
         {/* ----------------------- Create node overlay -------------------- */}
         {showNodeForm && (
@@ -376,7 +337,7 @@ export default function App() {
               onChange={(e) => handleParentChange(e.target.value)}
             >
               <option value="">Select parent</option>
-              {filterParentCandidates(availableNodes, newNode.level).map((n) => (
+              {availableNodes.map((n) => (
                 <option key={n.id} value={n.id}>
                   {n.id}
                   {n.name ? ` - ${n.name}` : ''}
@@ -475,9 +436,6 @@ export default function App() {
           <button className="border px-2 py-1" onClick={addMaterial}>
             Add Material
           </button>
-          <button className="border px-2 py-1" onClick={finalizeProject}>
-            Fertigstellen
-          </button>
           <button className="border px-2 py-1" onClick={undo}>
             Undo
           </button>
@@ -489,8 +447,7 @@ export default function App() {
 
       {/* ----------------------------------------------------------------- */}
       <div className="w-1/3 h-full overflow-auto border-l">
-        <ComponentTable components={state.nodes} />
-        <MaterialTable materials={state.materials} onDelete={deleteMaterial} />
+        <ComponentTable components={state.nodes} onDelete={deleteNode} />
       </div>
     </div>
   )
