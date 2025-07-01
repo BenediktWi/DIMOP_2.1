@@ -16,4 +16,9 @@ describe('filterParentCandidates', () => {
     const nodes: Component[] = [{ id: 1 }, { id: 2, level: 1 }]
     expect(filterParentCandidates(nodes, 1)).toEqual([{ id: 1 }])
   })
+
+  it('returns empty array for level 0', () => {
+    const nodes: Component[] = [{ id: 1, level: 0 }]
+    expect(filterParentCandidates(nodes, 0)).toEqual([])
+  })
 })

@@ -4,6 +4,7 @@ import ComponentTable from './components/ComponentTable'
 import MaterialTable from './components/MaterialTable'
 import useUndoRedo from './components/useUndoRedo'
 import { applyWsMessage, GraphState, WsMessage, Component } from './wsMessage'
+import filterParentCandidates from './filterParentCandidates'
 
 /**
  * 🔧 Keep a single source‑of‑truth for the allowed connection types so we can
@@ -58,6 +59,7 @@ export default function App() {
   const wsRef = useRef<WebSocket | null>(null)
   const [showNodeForm, setShowNodeForm] = useState(false)
   const [newNode, setNewNode] = useState<NewNodeState>(DEFAULT_NEW_NODE)
+  const [candidateNodes, setCandidateNodes] = useState<Component[]>([])
   const [availableNodes, setAvailableNodes] = useState<Component[]>([])
   const [availableLevels, setAvailableLevels] = useState<number[]>([])
 
@@ -152,12 +154,19 @@ export default function App() {
     fetch(`/projects/${projectId}/graph`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((data) => {
-        setAvailableNodes(data.nodes)
+        setCandidateNodes(data.nodes)
+        setAvailableNodes(filterParentCandidates(data.nodes, newNode.level))
         const max = Math.max(0, ...data.nodes.map((n: any) => n.level ?? 0))
         setAvailableLevels(Array.from({ length: max + 2 }, (_, i) => i))
       })
       .catch((err) => console.error(err))
   }, [showNodeForm, projectId])
+
+  // Recompute parent candidates whenever level or the underlying nodes change
+  useEffect(() => {
+    if (!showNodeForm) return
+    setAvailableNodes(filterParentCandidates(candidateNodes, newNode.level))
+  }, [candidateNodes, newNode.level, showNodeForm])
 
   /* --------------------------------------------------------------------- */
   /*  5️⃣  High‑level render guards                                         */
@@ -255,6 +264,7 @@ export default function App() {
       setNewNode(DEFAULT_NEW_NODE)
       // clear cached selectors so they refresh next time
       setAvailableNodes([])
+      setCandidateNodes([])
       setAvailableLevels([])
     }
   }
@@ -267,7 +277,7 @@ export default function App() {
       setNewNode((prev) => ({ ...prev, parent_id: '', level: 0 }))
       return
     }
-    const parent = availableNodes.find((n) => String(n.id) === pid)
+    const parent = candidateNodes.find((n) => String(n.id) === pid)
     const lvl = parent ? (parent.level ?? 0) + 1 : 1
     setNewNode((prev) => ({ ...prev, parent_id: pid, level: lvl }))
   }
@@ -320,11 +330,17 @@ export default function App() {
               disabled={newNode.parent_id !== ''}
               onChange={(e) => {
                 const lvl = Number(e.target.value)
-                setNewNode((prev) => ({
-                  ...prev,
-                  level: lvl,
-                  parent_id: lvl === 0 ? '' : prev.parent_id,
-                }))
+                setNewNode((prev) => {
+                  const parent = candidateNodes.find(
+                    (n) => String(n.id) === prev.parent_id,
+                  )
+                  const valid = parent && (parent.level ?? 0) === lvl - 1
+                  return {
+                    ...prev,
+                    level: lvl,
+                    parent_id: valid && lvl !== 0 ? prev.parent_id : '',
+                  }
+                })
               }}
             >
               {availableLevels.map((l) => (
