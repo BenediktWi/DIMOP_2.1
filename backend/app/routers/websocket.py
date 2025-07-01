@@ -7,7 +7,18 @@ connections: dict[int, list[WebSocket]] = {}
 
 
 async def broadcast(project_id: int, message: dict):
-    for ws in connections.get(project_id, []):
+    """Send ``message`` to all sockets for ``project_id``.
+    
+    The special ID ``0`` broadcasts to every connected client.
+    """
+    targets = []
+    if project_id == 0:
+        for lst in connections.values():
+            targets.extend(lst)
+    else:
+        targets = connections.get(project_id, [])
+
+    for ws in targets:
         await ws.send_json(message)
 
 
