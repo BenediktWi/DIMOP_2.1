@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import GraphCanvas, { layoutNodesByLevel } from './components/GraphCanvas'
 import ComponentTable from './components/ComponentTable'
+import MaterialTable from './components/MaterialTable'
 import useUndoRedo from './components/useUndoRedo'
 import { applyWsMessage, GraphState, WsMessage, Component } from './wsMessage'
 
@@ -289,6 +290,10 @@ export default function App() {
     fetch(`/nodes/${id}`, { method: 'DELETE' }).catch(err => console.error(err))
   }
 
+  const deleteMaterial = (id: number) => {
+    fetch(`/materials/${id}`, { method: 'DELETE' }).catch(err => console.error(err))
+  }
+
   /* --------------------------------------------------------------------- */
   /*  9️⃣  Render                                                           */
   /* --------------------------------------------------------------------- */
@@ -448,6 +453,7 @@ export default function App() {
       {/* ----------------------------------------------------------------- */}
       <div className="w-1/3 h-full overflow-auto border-l">
         <ComponentTable components={state.nodes} onDelete={deleteNode} />
+        <MaterialTable materials={state.materials} onDelete={deleteMaterial} />
       </div>
     </div>
   )
