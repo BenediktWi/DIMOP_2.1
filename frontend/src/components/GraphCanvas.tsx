@@ -59,7 +59,8 @@ export default function GraphCanvas({ nodes, edges, onConnectEdge }: Props) {
             top: 0,
             bottom: 0,
             width: X_OFFSET,
-            borderRight: '1px solid #eee',
+            borderRight: '1px dashed #ccc',
+            borderLeft: lvl === 0 ? '1px dashed #ccc' : undefined,
             pointerEvents: 'none',
           }}
         />
