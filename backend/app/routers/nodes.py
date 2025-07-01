@@ -6,7 +6,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from .websocket import broadcast
 from ..database import get_session, get_write_session
 from ..models.schemas import Node, NodeCreate, ConnectionType
-from ..models.db import Node as NodeModel
+from ..models.db import Node as NodeModel, Relation as RelationModel
 
 router = APIRouter(prefix="/nodes", tags=["nodes"])
 
@@ -140,7 +140,22 @@ async def delete_node(
         raise HTTPException(status_code=404, detail="Node not found")
 
     pid = db_obj.project_id
+
+    # remove relations referencing this node
+    res_rel = await session.execute(
+        select(RelationModel).where(
+            (RelationModel.source_id == node_id)
+            | (RelationModel.target_id == node_id)
+        )
+    )
+    relations = list(res_rel.scalars())
+    for rel in relations:
+        await session.delete(rel)
+
     await session.delete(db_obj)
     await session.commit()
+
+    for rel in relations:
+        await broadcast(rel.project_id, {"op": "delete_relation", "id": rel.id})
     await broadcast(pid, {"op": "delete_node", "id": node_id})
     return {"ok": True}

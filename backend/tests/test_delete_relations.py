@@ -1,3 +1,4 @@
+import asyncio
 import os
 import pytest
 from fastapi.testclient import TestClient
@@ -30,55 +31,62 @@ def client():
     async def init_models():
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-    import asyncio
     asyncio.get_event_loop().run_until_complete(init_models())
 
     with TestClient(fastapi_app) as c:
         yield c
 
     fastapi_app.dependency_overrides.clear()
-    import asyncio
     asyncio.get_event_loop().run_until_complete(engine.dispose())
 
 
-def test_parent_edge_in_graph(client):
+def test_relations_removed_on_node_delete(client):
     client.post("/projects/", json={"name": "Demo"})
     client.post(
         "/materials/",
         json={"name": "Steel", "weight": 1.0, "co2_value": 1.0, "hardness": 1.0},
     )
-    # root node
+    # node A
     client.post(
         "/nodes/",
         json={
             "project_id": 1,
             "material_id": 1,
-            "name": "Root",
+            "name": "A",
             "parent_id": None,
-            "atomic": False,
+            "atomic": True,
             "reusable": False,
             "connection_type": 0,
             "level": 0,
+            "weight": 1.0,
             "recyclable": True,
         },
     )
-    # child node
-    res = client.post(
+    # node B
+    client.post(
         "/nodes/",
         json={
             "project_id": 1,
             "material_id": 1,
-            "name": "Child",
-            "parent_id": 1,
+            "name": "B",
+            "parent_id": None,
             "atomic": True,
             "reusable": False,
             "connection_type": 0,
-            "level": 1,
-            "weight": 2.0,
+            "level": 0,
+            "weight": 1.0,
             "recyclable": True,
         },
     )
-    nid = res.json()["id"]
-    graph = client.get("/projects/1/graph").json()
-    assert {"id": -nid, "source": 1, "target": nid} in graph["edges"]
+    client.post(
+        "/relations/",
+        json={"project_id": 1, "source_id": 1, "target_id": 2},
+    )
 
+    graph = client.get("/projects/1/graph").json()
+    assert {"id": 1, "source": 1, "target": 2} in graph["edges"]
+
+    client.delete("/nodes/2")
+
+    graph = client.get("/projects/1/graph").json()
+    assert {"id": 1, "source": 1, "target": 2} not in graph["edges"]

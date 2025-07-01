@@ -8,7 +8,7 @@ connections: dict[int, list[WebSocket]] = {}
 
 async def broadcast(project_id: int, message: dict):
     """Send ``message`` to all sockets for ``project_id``.
-    
+
     The special ID ``0`` broadcasts to every connected client.
     """
     targets = []
